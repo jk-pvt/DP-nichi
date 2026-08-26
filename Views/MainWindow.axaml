@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DesignPatternCatalog.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
+        Width="1200" Height="860"
+        MinWidth="950" MinHeight="680"
+        x:Class="DesignPatternCatalog.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Background="#080808"
+        Title="The Catalog of Design Patterns (GoF C# &amp; Avalonia UI)">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Grid>
+        <ContentControl Content="{Binding CurrentViewModel}" />
+    </Grid>
+
+</Window>
