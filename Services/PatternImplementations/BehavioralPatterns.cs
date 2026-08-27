@@ -1,44 +1,64 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace DesignPatternCatalog.Services.PatternImplementations;
 
 public interface IObserver
 {
-    string Notify(string videoTitle, string channelName);
+    string ObserverType { get; }
+    string Notify(string videoTitle, string channelName, string eventPriority);
 }
 
 public class UserSubscriber : IObserver
 {
     public string UserName { get; }
+    public string ObserverType => "User Mobile Subscriber";
+
     public UserSubscriber(string name) { UserName = name; }
-    public string Notify(string videoTitle, string channelName) =>
-        $"• [USER SUB] User '{UserName}' (Mobile Client) -> Received instant push alert: \"New Video: {videoTitle}\"";
+
+    public string Notify(string videoTitle, string channelName, string eventPriority) =>
+        $"  • [USER CLIENT] '{UserName}' received instant alert: [{eventPriority}] \"{videoTitle}\"";
 }
 
 public class PushGatewayObserver : IObserver
 {
-    public string Notify(string videoTitle, string channelName) =>
-        $"• [SYSTEM] APNs/FCM Push Gateway -> Dispatched 14,820 mobile notification tokens for '{videoTitle}'.";
+    public string ObserverType => "Apple APNs / Google FCM Push Gateway";
+
+    public string Notify(string videoTitle, string channelName, string eventPriority) =>
+        $"  • [PUSH SERVICE] APNs/FCM dispatched 128,450 mobile device push notifications for \"{videoTitle}\".";
 }
 
 public class DiscordWebhookObserver : IObserver
 {
-    public string Notify(string videoTitle, string channelName) =>
-        $"• [WEBHOOK] Discord Community Bot -> Posted embed banner to #announcements.";
+    public string ObserverType => "Discord Community Webhook Bot";
+
+    public string Notify(string videoTitle, string channelName, string eventPriority) =>
+        $"  • [DISCORD BOT] Posted rich embed card to #announcements: [{eventPriority}] \"{videoTitle}\".";
 }
 
 public class EmailDigestObserver : IObserver
 {
-    public string Notify(string videoTitle, string channelName) =>
-        $"• [EMAIL] Email Dispatcher -> Queued weekly digest for 5,200 subscribers.";
+    public string ObserverType => "Email Newsletter Digest Service";
+
+    public string Notify(string videoTitle, string channelName, string eventPriority) =>
+        $"  • [EMAIL QUEUE] Queued personalized email digest for 42,900 newsletter subscribers.";
+}
+
+public class TelegramBotObserver : IObserver
+{
+    public string ObserverType => "Telegram VIP Broadcast Bot";
+
+    public string Notify(string videoTitle, string channelName, string eventPriority) =>
+        $"  • [TELEGRAM VIP] Broadcasted pinned announcement to 15,200 channel members.";
 }
 
 public interface ISubject
 {
     void Subscribe(IObserver observer);
     void Unsubscribe(IObserver observer);
-    List<string> UploadVideo(string videoTitle);
+    List<string> Broadcast(string videoTitle, string priority);
 }
 
 public class YouTubeChannel : ISubject
@@ -54,12 +74,12 @@ public class YouTubeChannel : ISubject
     public void Subscribe(IObserver observer) => _subscribers.Add(observer);
     public void Unsubscribe(IObserver observer) => _subscribers.Remove(observer);
 
-    public List<string> UploadVideo(string videoTitle)
+    public List<string> Broadcast(string videoTitle, string priority)
     {
         var logs = new List<string>();
         foreach (var sub in _subscribers)
         {
-            logs.Add(sub.Notify(videoTitle, ChannelName));
+            logs.Add(sub.Notify(videoTitle, ChannelName, priority));
         }
         return logs;
     }
@@ -68,55 +88,104 @@ public class YouTubeChannel : ISubject
 public class RouteResult
 {
     public string StrategyName { get; set; } = string.Empty;
-    public string Corridors { get; set; } = string.Empty;
-    public double DistanceKm { get; set; }
-    public string EstimatedTime { get; set; } = string.Empty;
-    public double TollCost { get; set; }
-    public double CarbonKg { get; set; }
+    public string RouteDescription { get; set; } = string.Empty;
+    public double BaseDistanceKm { get; set; }
+    public double CalculatedDurationHours { get; set; }
+    public double TollAndFareCost { get; set; }
+    public double CarbonEmissionKg { get; set; }
 }
 
 public interface IRouteStrategy
 {
-    RouteResult BuildRoute(string origin, string destination);
+    RouteResult CalculateRoute(string origin, string destination, double trafficMultiplier, HashSet<string> preferenceToggles);
 }
 
 public class HighwayExpressStrategy : IRouteStrategy
 {
-    public RouteResult BuildRoute(string origin, string destination) => new()
+    public RouteResult CalculateRoute(string origin, string destination, double trafficMultiplier, HashSet<string> preferenceToggles)
     {
-        StrategyName = "RoadHighwayStrategy",
-        Corridors = "National Express 6-Lane Corridor",
-        DistanceKm = 148.0,
-        EstimatedTime = "2 hours 15 mins (Avg Speed: 65.7 km/h)",
-        TollCost = 320.00,
-        CarbonKg = 18.4
-    };
+        bool avoidTolls = preferenceToggles.Any(t => t.Contains("Avoid Highway Tolls"));
+        bool hovLane = preferenceToggles.Any(t => t.Contains("Carpool"));
+
+        double distance = avoidTolls ? 168.0 : 148.0;
+        double speed = (avoidTolls ? 55.0 : 75.0) / (hovLane ? Math.Min(trafficMultiplier, 1.1) : trafficMultiplier);
+        double duration = distance / speed;
+        double tollCost = avoidTolls ? 0.0 : 340.0;
+        double carbon = distance * 0.125;
+
+        return new RouteResult
+        {
+            StrategyName = "Highway Express Driving Strategy",
+            RouteDescription = avoidTolls ? "State Highway 42 Corridor (Toll-Free Route)" : "National Express 6-Lane Expressway (Fastest)",
+            BaseDistanceKm = distance,
+            CalculatedDurationHours = duration,
+            TollAndFareCost = tollCost,
+            CarbonEmissionKg = carbon
+        };
+    }
 }
 
 public class BicycleScenicStrategy : IRouteStrategy
 {
-    public RouteResult BuildRoute(string origin, string destination) => new()
+    public RouteResult CalculateRoute(string origin, string destination, double trafficMultiplier, HashSet<string> preferenceToggles)
     {
-        StrategyName = "BicycleScenicStrategy",
-        Corridors = "Western Scenic Greenway Route",
-        DistanceKm = 156.0,
-        EstimatedTime = "8 hours 30 mins",
-        TollCost = 0.00,
-        CarbonKg = 0.0
-    };
+        double distance = 154.0;
+        double speed = 18.0;
+        double duration = distance / speed;
+
+        return new RouteResult
+        {
+            StrategyName = "Scenic Greenway Bicycle Strategy",
+            RouteDescription = "Western Scenic Bicycle Trail & Dedicated Riverway",
+            BaseDistanceKm = distance,
+            CalculatedDurationHours = duration,
+            TollAndFareCost = 0.0,
+            CarbonEmissionKg = 0.0
+        };
+    }
 }
 
 public class PublicTransitStrategy : IRouteStrategy
 {
-    public RouteResult BuildRoute(string origin, string destination) => new()
+    public RouteResult CalculateRoute(string origin, string destination, double trafficMultiplier, HashSet<string> preferenceToggles)
     {
-        StrategyName = "PublicTransitStrategy",
-        Corridors = "Express Train & Metro Link",
-        DistanceKm = 152.0,
-        EstimatedTime = "3 hours 05 mins",
-        TollCost = 560.00,
-        CarbonKg = 4.2
-    };
+        double distance = 152.0;
+        double duration = 2.75;
+        double fare = 480.0;
+        double carbon = distance * 0.035;
+
+        return new RouteResult
+        {
+            StrategyName = "Metropolitan Transit (Metro + Vande Bharat Express)",
+            RouteDescription = "Metro Line 3 -> High-Speed Vande Bharat Intercity Rail",
+            BaseDistanceKm = distance,
+            CalculatedDurationHours = duration,
+            TollAndFareCost = fare,
+            CarbonEmissionKg = carbon
+        };
+    }
+}
+
+public class EvEcoStrategy : IRouteStrategy
+{
+    public RouteResult CalculateRoute(string origin, string destination, double trafficMultiplier, HashSet<string> preferenceToggles)
+    {
+        bool includeChargers = preferenceToggles.Any(t => t.Contains("EV Fast Charging"));
+        double distance = 150.0;
+        double speed = 68.0 / trafficMultiplier;
+        double duration = (distance / speed) + (includeChargers ? 0.4 : 0.0);
+        double powerCost = 180.0 + (includeChargers ? 120.0 : 0.0);
+
+        return new RouteResult
+        {
+            StrategyName = "Eco-Optimized Electric Vehicle (EV) Route",
+            RouteDescription = "Green Corridor EV Expressway with High-Power DC Fast Chargers",
+            BaseDistanceKm = distance,
+            CalculatedDurationHours = duration,
+            TollAndFareCost = powerCost,
+            CarbonEmissionKg = 0.0
+        };
+    }
 }
 
 public class NavigatorContext
@@ -130,28 +199,33 @@ public class NavigatorContext
 
     public void SetStrategy(IRouteStrategy strategy) => _strategy = strategy;
 
-    public string Calculate(string origin, string destination)
+    public string Calculate(string origin, string destination, double trafficMultiplier, HashSet<string> toggles)
     {
-        RouteResult r = _strategy.BuildRoute(origin, destination);
-        return $"[STRATEGY PATTERN: {r.StrategyName}]\n" +
+        RouteResult r = _strategy.CalculateRoute(origin, destination, trafficMultiplier, toggles);
+        int hours = (int)r.CalculatedDurationHours;
+        int minutes = (int)Math.Round((r.CalculatedDurationHours - hours) * 60);
+
+        bool showCarbon = toggles.Any(t => t.Contains("Carbon"));
+
+        return $"[STRATEGY PATTERN DYNAMIC ROUTE COMPUTATION]\n" +
                $"------------------------------------------------------------\n" +
-               $"• Active Strategy:     {_strategy.GetType().Name} (implements IRouteStrategy)\n" +
-               $"• Route Direction:     From \"{origin}\" To \"{destination}\"\n" +
-               $"• Algorithm Corridor:  {r.Corridors}\n" +
-               $"• Distance:            {r.DistanceKm:F1} km\n" +
-               $"• Estimated Time:      {r.EstimatedTime}\n" +
-               $"• Toll/Fare Cost:      ₹{r.TollCost:F2}\n" +
-               $"• Carbon Footprint:    {r.CarbonKg:F1} kg CO2\n" +
+               $"• Active Strategy:      {r.StrategyName}\n" +
+               $"• Trip Itinerary:       \"{origin}\" ➔ \"{destination}\"\n" +
+               $"• Route Path:           {r.RouteDescription}\n" +
+               $"• Total Distance:       {r.BaseDistanceKm:F1} km\n" +
+               $"• Estimated Trip Time:  {hours}h {minutes}m (Traffic Multiplier: {trafficMultiplier:F2}x)\n" +
+               $"• Estimated Toll/Fare:  ₹{r.TollAndFareCost:F2}\n" +
+               (showCarbon ? $"• Carbon Emission:      {r.CarbonEmissionKg:F1} kg CO2\n" : "") +
                $"------------------------------------------------------------\n" +
-               $"STATUS: Algorithm executed dynamically via Navigator Context.";
+               $"STATUS: Algorithm executed dynamically via Navigator Strategy Context.";
     }
 }
 
 public interface ICommand
 {
+    string CommandName { get; }
     void Execute();
     void Undo();
-    string GetName();
 }
 
 public class TextEditor
@@ -165,6 +239,8 @@ public class InsertTextCommand : ICommand
     private readonly string _text;
     private string _previousState = string.Empty;
 
+    public string CommandName => $"InsertTextCommand(\"{_text}\")";
+
     public InsertTextCommand(TextEditor editor, string text)
     {
         _editor = editor;
@@ -174,39 +250,46 @@ public class InsertTextCommand : ICommand
     public void Execute()
     {
         _previousState = _editor.Buffer;
-        _editor.Buffer += _text;
+        _editor.Buffer = string.IsNullOrEmpty(_editor.Buffer) ? _text : $"{_editor.Buffer} {_text}";
     }
 
     public void Undo()
     {
         _editor.Buffer = _previousState;
     }
-
-    public string GetName() => $"InsertTextCommand(\"{_text}\")";
 }
 
-public class ChangeCaseCommand : ICommand
+public class TransformCaseCommand : ICommand
 {
     private readonly TextEditor _editor;
+    private readonly string _mode;
     private string _previousState = string.Empty;
 
-    public ChangeCaseCommand(TextEditor editor)
+    public string CommandName => $"TransformCaseCommand({_mode})";
+
+    public TransformCaseCommand(TextEditor editor, string mode)
     {
         _editor = editor;
+        _mode = mode;
     }
 
     public void Execute()
     {
         _previousState = _editor.Buffer;
-        _editor.Buffer = _editor.Buffer.ToUpperInvariant();
+        if (_mode.Contains("UPPERCASE"))
+            _editor.Buffer = _editor.Buffer.ToUpperInvariant();
+        else if (_mode.Contains("Title"))
+            _editor.Buffer = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(_editor.Buffer.ToLowerInvariant());
+        else if (_mode.Contains("Markdown Quotes"))
+            _editor.Buffer = $"> {_editor.Buffer}";
+        else if (_mode.Contains("Clear"))
+            _editor.Buffer = string.Empty;
     }
 
     public void Undo()
     {
         _editor.Buffer = _previousState;
     }
-
-    public string GetName() => "ChangeCaseCommand(UPPERCASE)";
 }
 
 public class CommandHistory
@@ -216,76 +299,92 @@ public class CommandHistory
     public void Push(ICommand cmd) => _history.Push(cmd);
     public ICommand? Pop() => _history.Count > 0 ? _history.Pop() : null;
     public int Count => _history.Count;
+    public IEnumerable<string> GetHistoryList() => _history.Select(c => c.CommandName);
 }
 
 public interface IAudioState
 {
-    string ClickPlay(AudioPlayerContext context);
+    string StateName { get; }
+    string ClickPlay(AudioPlayerContext context, string trackName, int bitrate, string eqProfile);
     string ClickPause(AudioPlayerContext context);
     string ClickLock(AudioPlayerContext context);
-    string StateName { get; }
 }
 
 public class StoppedState : IAudioState
 {
-    public string StateName => "StoppedState";
-    public string ClickPlay(AudioPlayerContext context)
+    public string StateName => "Stopped State";
+
+    public string ClickPlay(AudioPlayerContext context, string trackName, int bitrate, string eqProfile)
     {
         context.State = new PlayingState();
-        return "Transitioned -> PlayingState | Decoding 320kbps audio stream.";
+        return $"Started Streaming \"{trackName}\" at {bitrate} kbps Hi-Res | EQ: [{eqProfile}].";
     }
-    public string ClickPause(AudioPlayerContext context) => "Ignored: Cannot pause when stopped.";
+
+    public string ClickPause(AudioPlayerContext context) => "Action Ignored: Player is currently stopped.";
+
     public string ClickLock(AudioPlayerContext context)
     {
         context.State = new LockedState(this);
-        return "Transitioned -> LockedState | Player locked in stopped mode.";
+        return "Controls Locked while stopped.";
     }
 }
 
 public class PlayingState : IAudioState
 {
-    public string StateName => "PlayingState";
-    public string ClickPlay(AudioPlayerContext context) => "Track already playing.";
+    public string StateName => "Playing State";
+
+    public string ClickPlay(AudioPlayerContext context, string trackName, int bitrate, string eqProfile) =>
+        $"Track \"{trackName}\" is already playing actively.";
+
     public string ClickPause(AudioPlayerContext context)
     {
         context.State = new PausedState();
-        return "Transitioned -> PausedState | Audio buffer frozen at current sample.";
+        return "Playback Paused: Audio buffer frozen at current playback sample.";
     }
+
     public string ClickLock(AudioPlayerContext context)
     {
         context.State = new LockedState(this);
-        return "Transitioned -> LockedState | Player locked in playback mode.";
+        return "Controls Locked while music continues streaming in background.";
     }
 }
 
 public class PausedState : IAudioState
 {
-    public string StateName => "PausedState";
-    public string ClickPlay(AudioPlayerContext context)
+    public string StateName => "Paused State";
+
+    public string ClickPlay(AudioPlayerContext context, string trackName, int bitrate, string eqProfile)
     {
         context.State = new PlayingState();
-        return "Transitioned -> PlayingState | Resumed audio stream.";
+        return $"Playback Resumed: Streaming \"{trackName}\" ({bitrate} kbps).";
     }
+
     public string ClickPause(AudioPlayerContext context) => "Already paused.";
+
     public string ClickLock(AudioPlayerContext context)
     {
         context.State = new LockedState(this);
-        return "Transitioned -> LockedState | Player locked in paused mode.";
+        return "Controls Locked in paused mode.";
     }
 }
 
 public class LockedState : IAudioState
 {
     private readonly IAudioState _previousState;
-    public string StateName => "LockedState";
+    public string StateName => "Locked State";
+
     public LockedState(IAudioState previous) { _previousState = previous; }
 
-    public string ClickPlay(AudioPlayerContext context) => "Controls are locked. Click Unlock.";
-    public string ClickPause(AudioPlayerContext context) => "Controls are locked. Click Unlock.";
+    public string ClickPlay(AudioPlayerContext context, string trackName, int bitrate, string eqProfile) =>
+        "Touch Controls Locked: Unlock device before interacting.";
+
+    public string ClickPause(AudioPlayerContext context) =>
+        "Touch Controls Locked: Unlock device before interacting.";
+
     public string ClickLock(AudioPlayerContext context)
     {
         context.State = _previousState;
-        return $"Transitioned -> {_previousState.StateName} | Player controls unlocked.";
+        return $"Controls Unlocked -> Restored to [{_previousState.StateName}].";
     }
 }
 

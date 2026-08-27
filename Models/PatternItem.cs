@@ -28,7 +28,6 @@ public class PatternItem
     public string RealLifeProblem { get; set; } = string.Empty;
     public string RealLifeSolution { get; set; } = string.Empty;
 
-
     public string IconGeometry { get; set; } = string.Empty;
     public string AccentColor { get; set; } = "#FFFFFF";
 
@@ -42,8 +41,11 @@ public class PatternItem
     public string DefaultInput1 { get; set; } = string.Empty;
     public string InputLabel2 { get; set; } = string.Empty;
     public string DefaultInput2 { get; set; } = string.Empty;
+    public string OptionLabel1 { get; set; } = "Select Option";
     public List<string> OptionList1 { get; set; } = new();
+    public string OptionLabel2 { get; set; } = "Select Option";
     public List<string> OptionList2 { get; set; } = new();
+    public string ToggleLabel { get; set; } = "Optional Add-ons";
     public List<string> ToggleList { get; set; } = new();
 
     public Func<PatternPlaygroundContext, string>? AdvancedDemoRunner { get; set; }

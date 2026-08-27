@@ -166,14 +166,14 @@
 
                                 <Grid ColumnDefinitions="*,*" Margin="0,0,0,2">
                                     <StackPanel Grid.Column="0" Margin="0,0,8,0" IsVisible="{Binding HasOptionList1}" Spacing="4">
-                                        <TextBlock Text="Option 1" FontSize="11.5" Foreground="#AAAAAA" />
+                                        <TextBlock Text="{Binding Pattern.OptionLabel1}" FontSize="11.5" Foreground="#AAAAAA" />
                                         <ComboBox ItemsSource="{Binding OptionList1}" 
                                                   SelectedItem="{Binding SelectedOption1}" 
                                                   HorizontalAlignment="Stretch" />
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Margin="8,0,0,0" IsVisible="{Binding HasOptionList2}" Spacing="4">
-                                        <TextBlock Text="Option 2" FontSize="11.5" Foreground="#AAAAAA" />
+                                        <TextBlock Text="{Binding Pattern.OptionLabel2}" FontSize="11.5" Foreground="#AAAAAA" />
                                         <ComboBox ItemsSource="{Binding OptionList2}" 
                                                   SelectedItem="{Binding SelectedOption2}" 
                                                   HorizontalAlignment="Stretch" />
@@ -181,7 +181,7 @@
                                 </Grid>
 
                                 <StackPanel IsVisible="{Binding HasToggles}" Spacing="6">
-                                    <TextBlock Text="Features" FontSize="11.5" Foreground="#AAAAAA" />
+                                    <TextBlock Text="{Binding Pattern.ToggleLabel}" FontSize="11.5" Foreground="#AAAAAA" />
                                     <ItemsControl ItemsSource="{Binding ToggleOptions}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>

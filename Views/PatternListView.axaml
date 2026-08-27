@@ -112,10 +112,7 @@
                                                TextTrimming="CharacterEllipsis" 
                                                Height="36" />
 
-                                    <TextBlock Text="{Binding CodeFiles.Count, StringFormat='{}{0} C# files'}" 
-                                               FontSize="11.5" 
-                                               Foreground="#666666" 
-                                               Margin="0,4,0,0" />
+
                                 </StackPanel>
                             </Button>
                         </Border>

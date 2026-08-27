@@ -44,12 +44,17 @@ public class PatternRepository
                 RealLifeProblem = "If your code creates trucks directly with 'new Truck()', adding ships or airplanes later means finding and changing code in many different places.",
                 RealLifeSolution = "Create a single method that makes the vehicle for you. Adding a new vehicle type is as simple as creating a new subclass without touching the rest of your app.",
                 DemoTitle = "Delivery Dispatch Simulator",
-                DemoDescription = "Pick a transport type and distance to see how the Factory creates the vehicle and calculates cost.",
-                InputLabel1 = "Package Description",
-                DefaultInput1 = "Medical Supplies",
+                DemoDescription = "Customize package description, distance, delivery vehicle, base rate, and optional handling features to compute real-time dynamic logistics.",
+                InputLabel1 = "Package Cargo & Description",
+                DefaultInput1 = "Medical Diagnostics Equipment (450 kg)",
                 InputLabel2 = "Distance (km)",
                 DefaultInput2 = "1250",
-                OptionList1 = new List<string> { "Highway Truck (Road)", "Cargo Ship (Sea)", "Airplane (Air)" },
+                OptionLabel1 = "Delivery Vehicle Mode",
+                OptionList1 = new List<string> { "Highway Truck (Road)", "Cargo Container Ship (Sea)", "Boeing 777 Cargo Jet (Air)", "Autonomous Drone Fleet (Rapid Air)" },
+                OptionLabel2 = "Rate per Kilometer (₹)",
+                OptionList2 = new List<string> { "Standard Rate (₹120.00/km)", "Economy Rate (₹65.00/km)", "Express Priority Rate (₹280.00/km)", "Heavy Freight Rate (₹450.00/km)" },
+                ToggleLabel = "Logistics Surcharges & Handling",
+                ToggleList = new List<string> { "Express 24/7 Priority (+15%)", "Climate Controlled Refrigeration (+₹500)", "Hazardous Material Handling (+₹1,200)", "Full Cargo Insurance Coverage (+2.5%)" },
                 DemoActions = new List<DemoActionItem>
                 {
                     new() { Title = "Dispatch Vehicle", Parameter = "dispatch", Description = "Calls CreateTransport() and runs delivery." }
@@ -57,14 +62,20 @@ public class PatternRepository
                 AdvancedDemoRunner = (ctx) =>
                 {
                     string cargo = string.IsNullOrWhiteSpace(ctx.Input1) ? "General Goods" : ctx.Input1;
-                    if (!double.TryParse(ctx.Input2, out double distance)) distance = 1000;
+                    if (!double.TryParse(ctx.Input2, out double distance) || distance <= 0) distance = 1000;
                     string mode = ctx.SelectedOption1;
+                    string rateChoice = ctx.SelectedOption2;
+
+                    double customRate = rateChoice.Contains("65") ? 65.00 :
+                                        rateChoice.Contains("280") ? 280.00 :
+                                        rateChoice.Contains("450") ? 450.00 : 120.00;
 
                     Logistics logistics = mode.Contains("Ship") ? new SeaLogistics() :
-                                          mode.Contains("Air") ? new AirLogistics() :
+                                          mode.Contains("Jet") ? new AirLogistics() :
+                                          mode.Contains("Drone") ? new DroneLogistics() :
                                           new RoadLogistics();
 
-                    return logistics.PlanDelivery(cargo, distance);
+                    return logistics.PlanDelivery(cargo, distance, customRate, ctx.ActiveToggles);
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -77,8 +88,9 @@ public class PatternRepository
 
 public interface ITransport
 {
-    string Deliver(string cargo);
-    double CalculateCost(double distanceKm);
+    string VehicleName { get; }
+    string Deliver(string cargo, double distanceKm);
+    double CalculateCost(double distanceKm, double ratePerKm);
 }"
                     },
                     new()
@@ -90,8 +102,9 @@ public interface ITransport
 
 public class Truck : ITransport
 {
-    public string Deliver(string cargo) => $""[Truck] Carrying '{cargo}' by road."";
-    public double CalculateCost(double distanceKm) => distanceKm * 145.00;
+    public string VehicleName => ""Highway Truck (Road)"";
+    public string Deliver(string cargo, double distanceKm) => $""[Truck] Carrying '{cargo}' over {distanceKm} km by road."";
+    public double CalculateCost(double distanceKm, double ratePerKm) => distanceKm * ratePerKm;
 }"
                     },
                     new()
@@ -105,10 +118,10 @@ public abstract class Logistics
 {
     public abstract ITransport CreateTransport();
 
-    public string PlanDelivery(string cargo, double distanceKm)
+    public string PlanDelivery(string cargo, double distanceKm, double ratePerKm)
     {
         ITransport transport = CreateTransport();
-        return transport.Deliver(cargo) + $"" Cost: ₹{transport.CalculateCost(distanceKm):F2}"";
+        return transport.Deliver(cargo, distanceKm) + $"" Cost: ₹{transport.CalculateCost(distanceKm, ratePerKm):F2}"";
     }
 }
 
@@ -134,25 +147,35 @@ public class RoadLogistics : Logistics
                 RealLifeProblem = "If you mix and match controls by hand, you might accidentally put a Windows button inside a Mac window, making the app look broken.",
                 RealLifeSolution = "Use a factory that produces a whole set of matching controls (Buttons, Checkboxes, TextBoxes) designed for that specific theme or OS.",
                 DemoTitle = "UI Theme Factory Simulator",
-                DemoDescription = "Select an operating system to manufacture a complete matching set of UI controls.",
-                OptionList1 = new List<string> { "macOS Style Theme", "Windows Style Theme", "Linux Style Theme" },
-                InputLabel1 = "App Name",
-                DefaultInput1 = "My Dashboard",
+                DemoDescription = "Customize window title, button text, operating system theme family, accent colors, and optional UI widgets.",
+                InputLabel1 = "App Window Title",
+                DefaultInput1 = "Cloud Infrastructure Analytics",
+                InputLabel2 = "Action Button Label",
+                DefaultInput2 = "Deploy Production Cluster",
+                OptionLabel1 = "Theme & OS Family",
+                OptionList1 = new List<string> { "macOS Sequoia UI Suite", "Windows 11 Fluent Suite", "Linux GNOME GTK4 Suite", "Cyberpunk Neon Dark Suite" },
+                OptionLabel2 = "Theme Accent Color",
+                OptionList2 = new List<string> { "Platinum Monochrome (#FFFFFF)", "Emerald Green (#10B981)", "Electric Blue (#3B82F6)", "Neon Amber (#F59E0B)", "Cyber Purple (#A855F7)" },
+                ToggleLabel = "UI Component Family Elements",
+                ToggleList = new List<string> { "Include Search Bar Widget", "Include Notification Badge", "Include Status Bar Footer", "Include Touch Screen Mode" },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Build Matching UI Family", Parameter = "build", Description = "Creates matching controls." }
+                    new() { Title = "Manufacture Component Family", Parameter = "build", Description = "Creates matching controls." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
                     string target = ctx.SelectedOption1;
-                    string title = string.IsNullOrWhiteSpace(ctx.Input1) ? "App" : ctx.Input1;
+                    string accent = ctx.SelectedOption2;
+                    string title = string.IsNullOrWhiteSpace(ctx.Input1) ? "Application" : ctx.Input1;
+                    string buttonText = string.IsNullOrWhiteSpace(ctx.Input2) ? "Execute" : ctx.Input2;
 
                     IUIFactory factory = target.Contains("macOS") ? new MacUIFactory() :
                                          target.Contains("Windows") ? new WindowsUIFactory() :
+                                         target.Contains("Cyberpunk") ? new CyberpunkUIFactory() :
                                          new LinuxUIFactory();
 
-                    CrossPlatformApp app = new CrossPlatformApp(factory);
-                    return app.RenderSuite(title);
+                    var app = new DynamicUIApp(factory);
+                    return app.BuildComponentFamily(title, buttonText, accent, ctx.ActiveToggles);
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -163,8 +186,8 @@ public class RoadLogistics : Logistics
                         Description = "Defines methods to create a whole family of UI elements.",
                         Code = @"namespace UIDemo;
 
-public interface IButton { string Render(); }
-public interface ICheckbox { string Render(); }
+public interface IButton { string Render(string label, string accent); }
+public interface ICheckbox { string Render(string label, string accent); }
 
 public interface IUIFactory
 {
@@ -179,8 +202,10 @@ public interface IUIFactory
                         Description = "Produces matching Mac buttons and checkboxes.",
                         Code = @"namespace UIDemo;
 
-public class MacButton : IButton { public string Render() => ""[Mac] Rounded Button""; }
-public class MacCheckbox : ICheckbox { public string Render() => ""[Mac] Switch Toggle""; }
+public class MacButton : IButton 
+{ 
+    public string Render(string label, string accent) => $""[Mac] {label} (Accent: {accent})""; 
+}
 
 public class MacUIFactory : IUIFactory
 {
@@ -205,37 +230,72 @@ public class MacUIFactory : IUIFactory
                 RealLifeProblem = "Creating a complex object with 15 optional settings makes constructors long, confusing, and hard to read.",
                 RealLifeSolution = "Use a Builder with simple methods like SetCPU() and SetRAM(), and finish by calling Build() when you are done.",
                 DemoTitle = "Custom Computer Builder",
-                DemoDescription = "Pick components step-by-step and let the Builder assemble the computer and calculate price and power.",
-                OptionList1 = new List<string> { "Intel Core i9 (High Performance)", "AMD Ryzen 9 (Gaming & Work)", "Intel Core i5 (Daily Work)" },
-                OptionList2 = new List<string> { "NVIDIA RTX 4090 (Top Tier)", "AMD Radeon 7900 (High Tier)", "NVIDIA RTX 4070 (Mid Tier)", "Basic Built-in Graphics" },
-                ToggleList = new List<string> { "Extra 64GB RAM", "Extra 2TB Fast Storage", "Liquid Cooling Fan", "RGB Lighting Lights" },
+                DemoDescription = "Set rig name, target budget, processor, graphics card, and hardware upgrades. The Builder dynamically computes total pricing, power draw, and budget status.",
+                InputLabel1 = "Custom Rig Name",
+                DefaultInput1 = "JK's 4K Video & AI Workstation",
+                InputLabel2 = "Target Budget Limit (₹)",
+                DefaultInput2 = "250000",
+                OptionLabel1 = "Processor (CPU)",
+                OptionList1 = new List<string>
+                {
+                    "Intel Core i9-14900K (24C / 253W - ₹54,000)",
+                    "AMD Ryzen 9 7950X (16C / 170W - ₹56,500)",
+                    "Intel Core i7-14700K (20C / 190W - ₹38,000)",
+                    "AMD Ryzen 5 7600X (6C / 105W - ₹19,500)"
+                },
+                OptionLabel2 = "Graphics Card (GPU)",
+                OptionList2 = new List<string>
+                {
+                    "NVIDIA RTX 4090 24GB (450W - ₹1,68,000)",
+                    "AMD Radeon RX 7900 XTX 24GB (355W - ₹92,000)",
+                    "NVIDIA RTX 4070 Ti 16GB (285W - ₹76,000)",
+                    "Intel Arc A770 16GB (225W - ₹28,000)",
+                    "Integrated CPU Graphics (15W - ₹0)"
+                },
+                ToggleLabel = "Memory, Storage & Cooling Upgrades",
+                ToggleList = new List<string>
+                {
+                    "64GB DDR5-6000 RAM (+₹18,500 / +15W)",
+                    "2TB Gen4 NVMe SSD (+₹14,200 / +10W)",
+                    "360mm AIO Liquid Cooler (+₹12,800 / +35W)",
+                    "RGB Ambient Sync Kit (+₹4,500 / +20W)",
+                    "Platinum 1000W Power Supply (+₹16,000)"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
                     new() { Title = "Assemble Computer", Parameter = "build", Description = "Runs Builder steps." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
+                    string rigName = string.IsNullOrWhiteSpace(ctx.Input1) ? "Custom Rig" : ctx.Input1;
+                    if (!double.TryParse(ctx.Input2, out double budget) || budget <= 0) budget = 200000;
+
                     string cpu = ctx.SelectedOption1;
                     string gpu = ctx.SelectedOption2;
-                    bool highRam = ctx.ActiveToggles.Contains("Extra 64GB RAM");
-                    bool highStorage = ctx.ActiveToggles.Contains("Extra 2TB Fast Storage");
-                    bool liquidCooling = ctx.ActiveToggles.Contains("Liquid Cooling Fan");
-                    bool rgb = ctx.ActiveToggles.Contains("RGB Lighting Lights");
 
-                    double cpuPrice = cpu.Contains("i9") ? 52000 : cpu.Contains("Ryzen") ? 58000 : 21000;
-                    int cpuWatts = cpu.Contains("i9") ? 253 : cpu.Contains("Ryzen") ? 162 : 65;
+                    double cpuPrice = cpu.Contains("14900K") ? 54000 : cpu.Contains("7950X") ? 56500 : cpu.Contains("14700K") ? 38000 : 19500;
+                    int cpuWatts = cpu.Contains("14900K") ? 253 : cpu.Contains("7950X") ? 170 : cpu.Contains("14700K") ? 190 : 105;
 
-                    double gpuPrice = gpu.Contains("4090") ? 165000 : gpu.Contains("7900") ? 89000 : gpu.Contains("4070") ? 74000 : 0;
-                    int gpuWatts = gpu.Contains("4090") ? 450 : gpu.Contains("7900") ? 355 : gpu.Contains("4070") ? 285 : 15;
+                    double gpuPrice = gpu.Contains("4090") ? 168000 : gpu.Contains("7900") ? 92000 : gpu.Contains("4070") ? 76000 : gpu.Contains("A770") ? 28000 : 0;
+                    int gpuWatts = gpu.Contains("4090") ? 450 : gpu.Contains("7900") ? 355 : gpu.Contains("4070") ? 285 : gpu.Contains("A770") ? 225 : 15;
+
+                    bool highRam = ctx.ActiveToggles.Contains("64GB DDR5-6000 RAM (+₹18,500 / +15W)");
+                    bool highStorage = ctx.ActiveToggles.Contains("2TB Gen4 NVMe SSD (+₹14,200 / +10W)");
+                    bool liquidCooling = ctx.ActiveToggles.Contains("360mm AIO Liquid Cooler (+₹12,800 / +35W)");
+                    bool rgb = ctx.ActiveToggles.Contains("RGB Ambient Sync Kit (+₹4,500 / +20W)");
+                    bool psu1000 = ctx.ActiveToggles.Contains("Platinum 1000W Power Supply (+₹16,000)");
 
                     var builder = new CustomComputerBuilder();
-                    builder.SetMotherboard("Standard Gaming Board")
+                    builder.SetBuildName(rigName)
+                           .SetTargetBudget(budget)
+                           .SetMotherboard("ASUS ROG Strix Gaming Board", 28000, 75)
                            .SetCPU(cpu, cpuPrice, cpuWatts)
                            .SetGPU(gpu, gpuPrice, gpuWatts)
-                           .SetRAM(highRam ? 64 : 16, highRam ? 18500 : 5500)
-                           .SetStorage(highStorage ? 2000 : 512, highStorage ? 14000 : 4000)
-                           .SetCooling(liquidCooling, liquidCooling ? 15500 : 3200, liquidCooling ? 30 : 10)
-                           .SetRGB(rgb, rgb ? 6500 : 0);
+                           .SetRAM(highRam ? "64GB DDR5 Dual Channel" : "16GB DDR5 Standard", highRam ? 18500 : 5500, highRam ? 15 : 8)
+                           .SetStorage(highStorage ? "2TB High-Speed NVMe Gen4" : "512GB Standard SSD", highStorage ? 14200 : 4200, highStorage ? 10 : 5)
+                           .SetCooling(liquidCooling ? "360mm AIO Triple-Fan Liquid Cooler" : "Dual-Tower Air Cooler", liquidCooling ? 12800 : 3200, liquidCooling ? 35 : 10)
+                           .SetRGB(rgb ? "RGB Dynamic Halo Sync" : "No RGB Lighting", rgb ? 4500 : 0, rgb ? 20 : 0)
+                           .SetPSU(psu1000 ? "1000W Platinum 80+ Fully Modular" : "750W Gold 80+ Semi-Modular", psu1000 ? 16000 : 8500);
 
                     Computer pc = builder.Build();
                     return pc.GetSummary();
@@ -251,9 +311,10 @@ public class MacUIFactory : IUIFactory
 
 public class Computer
 {
+    public string BuildName { get; set; } = string.Empty;
     public string CPU { get; set; } = string.Empty;
     public string GPU { get; set; } = string.Empty;
-    public int RAM { get; set; }
+    public double TotalPrice { get; set; }
 }"
                     },
                     new()
@@ -267,8 +328,8 @@ public class ComputerBuilder
 {
     private Computer _pc = new();
 
-    public ComputerBuilder SetCPU(string cpu) { _pc.CPU = cpu; return this; }
-    public ComputerBuilder SetRAM(int ram) { _pc.RAM = ram; return this; }
+    public ComputerBuilder SetCPU(string cpu, double price) { _pc.CPU = cpu; _pc.TotalPrice += price; return this; }
+    public ComputerBuilder SetGPU(string gpu, double price) { _pc.GPU = gpu; _pc.TotalPrice += price; return this; }
     public Computer Build() => _pc;
 }"
                     }
@@ -289,44 +350,92 @@ public class ComputerBuilder
                 RealLifeProblem = "Creating a fresh copy of an object from outside can be difficult if some internal data is private or complex.",
                 RealLifeSolution = "Add a Clone() method directly on the object so it can make an exact copy of itself instantly.",
                 DemoTitle = "Document Cloner Simulator",
-                DemoDescription = "Pick a master template, enter new customer details, and clone it in memory.",
-                OptionList1 = new List<string> { "Standard Business Invoice", "Course Certificate", "Monthly Report" },
-                InputLabel1 = "Customer Name",
-                DefaultInput1 = "Rahul Sharma",
-                InputLabel2 = "Reference ID",
-                DefaultInput2 = "INV-2026-01",
+                DemoDescription = "Select a master template, enter customized recipient and reference ID, select a watermark priority, and toggle optional legal/milestone sections.",
+                InputLabel1 = "New Recipient / Client Name",
+                DefaultInput1 = "Acme Global Technologies Corp",
+                InputLabel2 = "New Invoice / Reference ID",
+                DefaultInput2 = "INV-2026-9811",
+                OptionLabel1 = "Base Document Template",
+                OptionList1 = new List<string>
+                {
+                    "Enterprise Commercial Contract (4 Sections)",
+                    "Freelance Software Project Proposal (5 Sections)",
+                    "Tax & Compliance Audit Report (6 Sections)",
+                    "Confidential NDA Agreement (3 Sections)"
+                },
+                OptionLabel2 = "Priority Watermark",
+                OptionList2 = new List<string>
+                {
+                    "Standard Delivery (No Watermark)",
+                    "CONFIDENTIAL & PROPRIETARY",
+                    "URGENT / EXPEDITE REVIEW",
+                    "DRAFT FOR APPROVAL"
+                },
+                ToggleLabel = "Optional Contract Clauses & Sections",
+                ToggleList = new List<string>
+                {
+                    "Include Payment Milestones Table",
+                    "Include Digital Cryptographic Signature",
+                    "Include Legal Arbitration Clauses",
+                    "Include Scope Deliverables Appendix"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Clone Document", Parameter = "clone", Description = "Calls Clone() and updates customer name." }
+                    new() { Title = "Clone & Mutate Document", Parameter = "clone", Description = "Calls Clone() and updates customer name." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
                     string template = ctx.SelectedOption1;
-                    string recipient = string.IsNullOrWhiteSpace(ctx.Input1) ? "Customer" : ctx.Input1;
+                    string watermark = ctx.SelectedOption2;
+                    string recipient = string.IsNullOrWhiteSpace(ctx.Input1) ? "Client" : ctx.Input1;
                     string refCode = string.IsNullOrWhiteSpace(ctx.Input2) ? "REF-001" : ctx.Input2;
 
                     var master = new DocumentTemplate
                     {
                         Title = template,
-                        ThemeColor = "#FFFFFF",
                         Recipient = "Master Template",
-                        ReferenceCode = "TEMPLATE-00",
-                        Sections = new List<string> { "Header", "Table", "Signature" }
+                        ReferenceCode = "TEMPLATE-ORIGINAL-00",
+                        PriorityWatermark = "None",
+                        Sections = template.Contains("Proposal")
+                            ? new List<string> { "Project Executive Summary", "Technical Architecture", "Milestone Roadmap", "Team Allocation", "Cost Estimation" }
+                            : template.Contains("Audit")
+                            ? new List<string> { "Audit Overview", "Compliance Checklist", "Security Vulnerabilities", "Financial Data", "Risk Matrix", "Remediation Steps" }
+                            : template.Contains("NDA")
+                            ? new List<string> { "Confidential Information Definition", "Non-Disclosure Obligations", "Remedies & Jurisdiction" }
+                            : new List<string> { "Contract Scope", "Payment Terms", "Intellectual Property", "Termination Clause" }
                     };
 
                     DocumentTemplate clone = master.Clone();
                     clone.Recipient = recipient;
                     clone.ReferenceCode = refCode;
+                    clone.PriorityWatermark = watermark;
 
-                    return $"[PROTOTYPE CLONING RESULT]\n" +
+                    if (ctx.ActiveToggles.Contains("Include Payment Milestones Table"))
+                        clone.Sections.Add("Addendum: Payment Milestone Schedule (30/40/30)");
+                    if (ctx.ActiveToggles.Contains("Include Digital Cryptographic Signature"))
+                        clone.Sections.Add("Addendum: Cryptographic SHA-256 Digital Signature");
+                    if (ctx.ActiveToggles.Contains("Include Legal Arbitration Clauses"))
+                        clone.Sections.Add("Addendum: Binding Legal Arbitration & Jurisdiction");
+                    if (ctx.ActiveToggles.Contains("Include Scope Deliverables Appendix"))
+                        clone.Sections.Add("Addendum: Detailed Functional Deliverables Spec");
+
+                    bool distinctObjects = !object.ReferenceEquals(master, clone);
+
+                    var sectionLines = clone.Sections.Select((s, i) => $"     [{i + 1}] {s}").ToList();
+
+                    return $"[PROTOTYPE CLONING MANIFEST]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"• Original Template: \"{master.Title}\" (Memory ID: #{master.GetHashCode():X})\n" +
-                           $"• Cloned Document:   \"{clone.Title}\" (Memory ID: #{clone.GetHashCode():X})\n" +
-                           $"• Assigned To:       {clone.Recipient}\n" +
-                           $"• Reference ID:      {clone.ReferenceCode}\n" +
-                           $"• Cloned Sections:   {clone.Sections.Count} sections copied instantly\n" +
+                           $"• Master Prototype:     \"{master.Title}\" (Memory: #0x{master.GetHashCode():X8})\n" +
+                           $"• Clone Operation:      IPrototype<DocumentTemplate>.Clone()\n" +
+                           $"• Cloned Instance:      New DocumentTemplate (Memory: #0x{clone.GetHashCode():X8})\n" +
+                           $"• Mutated Recipient:    \"{clone.Recipient}\"\n" +
+                           $"• Mutated Reference ID: \"{clone.ReferenceCode}\"\n" +
+                           $"• Priority Watermark:   \"{clone.PriorityWatermark}\"\n" +
+                           $"• Reference Comparison: ReferenceEquals(master, clone) => {!distinctObjects} (Independent objects!)\n\n" +
+                           $"CLONED DOCUMENT SECTIONS ({clone.Sections.Count} Active Layers):\n" +
+                           string.Join("\n", sectionLines) + "\n" +
                            $"------------------------------------------------------------\n" +
-                           $"RESULT: The document was cloned in memory without rebuilding from scratch.";
+                           $"STATUS: Cloned dynamically in memory in 0ms with all custom sections.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -344,20 +453,22 @@ public interface IPrototype<T>
                     },
                     new()
                     {
-                        FileName = "InvoiceTemplate.cs",
+                        FileName = "DocumentTemplate.cs",
                         Role = "Clonable Class",
                         Description = "Creates copies of itself.",
                         Code = @"namespace CloneDemo;
 
-public class InvoiceTemplate : IPrototype<InvoiceTemplate>
+public class DocumentTemplate : IPrototype<DocumentTemplate>
 {
     public string Title { get; set; } = string.Empty;
-    public string Customer { get; set; } = string.Empty;
+    public string Recipient { get; set; } = string.Empty;
+    public List<string> Sections { get; set; } = new();
 
-    public InvoiceTemplate Clone() => new InvoiceTemplate
+    public DocumentTemplate Clone() => new DocumentTemplate
     {
         Title = this.Title,
-        Customer = this.Customer
+        Recipient = this.Recipient,
+        Sections = new List<string>(this.Sections)
     };
 }"
                     }
@@ -378,61 +489,110 @@ public class InvoiceTemplate : IPrototype<InvoiceTemplate>
                 RealLifeProblem = "If different parts of your app create their own separate settings objects, changing a setting in one screen will not update other screens.",
                 RealLifeSolution = "Make the constructor private and provide a single static property 'Instance' so the entire app shares the exact same object.",
                 DemoTitle = "Global Settings Singleton Simulator",
-                DemoDescription = "Change settings in Module A and verify that Module B sees the exact same updated object in memory.",
-                OptionList1 = new List<string> { "Environment: Live", "Environment: Testing", "Environment: Local" },
-                InputLabel1 = "Max Connections",
-                DefaultInput1 = "50",
-                ToggleList = new List<string> { "Enable Fast Cache", "Enable Activity Logging" },
+                DemoDescription = "Configure host URI, thread pool, server cluster region, cache TTL, and security flags. Module A saves the settings; Module B and Module C read from the identical memory instance.",
+                InputLabel1 = "Database Host / Connection URI",
+                DefaultInput1 = "db-primary.asia-south1.gcp.internal:5432",
+                InputLabel2 = "Max Worker Thread Pool",
+                DefaultInput2 = "128",
+                OptionLabel1 = "Active Server Cluster",
+                OptionList1 = new List<string>
+                {
+                    "Production Cluster (Region: Mumbai asia-south1)",
+                    "Staging Cluster (Region: Frankfurt europe-west3)",
+                    "Disaster Recovery Failover (Region: Virginia us-east1)",
+                    "Local Dev Environment (127.0.0.1:8080)"
+                },
+                OptionLabel2 = "Cache Expiration Policy",
+                OptionList2 = new List<string>
+                {
+                    "Aggressive TTL (60 seconds)",
+                    "Standard TTL (15 minutes)",
+                    "Long-lived TTL (24 hours)",
+                    "Bypass Cache (No Caching)"
+                },
+                ToggleLabel = "Cluster Architecture & Security",
+                ToggleList = new List<string>
+                {
+                    "Enable Distributed Redis Cluster",
+                    "Enable Strict TLS 1.3 Encryption",
+                    "Enable Live Audit Telemetry Log",
+                    "Enable Automatic Horizontal Auto-Scaling"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Save in Module A", Parameter = "save", Description = "Updates AppSettings.Instance." }
+                    new() { Title = "Update Global Singleton State", Parameter = "save", Description = "Mutates AppConfiguration.Instance." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
+                    string host = string.IsNullOrWhiteSpace(ctx.Input1) ? "localhost:5432" : ctx.Input1;
+                    if (!int.TryParse(ctx.Input2, out int threads) || threads <= 0) threads = 64;
                     string env = ctx.SelectedOption1;
-                    if (!int.TryParse(ctx.Input1, out int pool)) pool = 50;
-                    bool redis = ctx.ActiveToggles.Contains("Enable Fast Cache");
-                    bool audit = ctx.ActiveToggles.Contains("Enable Activity Logging");
+                    string cache = ctx.SelectedOption2;
+
+                    bool redis = ctx.ActiveToggles.Contains("Enable Distributed Redis Cluster");
+                    bool tls = ctx.ActiveToggles.Contains("Enable Strict TLS 1.3 Encryption");
+                    bool audit = ctx.ActiveToggles.Contains("Enable Live Audit Telemetry Log");
+                    bool scaling = ctx.ActiveToggles.Contains("Enable Automatic Horizontal Auto-Scaling");
 
                     AppConfiguration moduleA = AppConfiguration.Instance;
+                    moduleA.HostUri = host;
+                    moduleA.MaxThreads = threads;
                     moduleA.Environment = env;
-                    moduleA.MaxConnections = pool;
-                    moduleA.RedisCacheEnabled = redis;
-                    moduleA.AuditLoggingEnabled = audit;
+                    moduleA.CachePolicy = cache;
+                    moduleA.RedisCluster = redis;
+                    moduleA.TlsEncryption = tls;
+                    moduleA.AuditLogging = audit;
+                    moduleA.AutoScaling = scaling;
+                    moduleA.RequestCounter += 1;
 
                     AppConfiguration moduleB = AppConfiguration.Instance;
-                    bool sameInstance = object.ReferenceEquals(moduleA, moduleB);
+                    AppConfiguration moduleC = AppConfiguration.Instance;
 
-                    return $"[SINGLETON INSTANCE CHECK]\n" +
+                    bool matchAB = object.ReferenceEquals(moduleA, moduleB);
+                    bool matchBC = object.ReferenceEquals(moduleB, moduleC);
+
+                    return $"[SINGLETON MULTI-MODULE STATE SYNCHRONIZATION]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"MODULE A (Saved Settings):\n" +
-                           $"• Memory ID:       #{moduleA.GetHashCode():X}\n" +
-                           $"• Environment:     {moduleA.Environment}\n" +
-                           $"• Max Connections: {moduleA.MaxConnections}\n\n" +
-                           $"MODULE B (Read Settings):\n" +
-                           $"• Memory ID:       #{moduleB.GetHashCode():X} (Same instance!)\n" +
-                           $"• Environment:     {moduleB.Environment}\n" +
-                           $"• Both Match:      {sameInstance}\n" +
+                           $"[MODULE A: Configuration Admin Writer]\n" +
+                           $"• Memory Address Hash:  #0x{moduleA.GetHashCode():X8}\n" +
+                           $"• Database Host URI:    {moduleA.HostUri}\n" +
+                           $"• Active Server Region: {moduleA.Environment}\n" +
+                           $"• Thread Pool:          {moduleA.MaxThreads} concurrent workers\n" +
+                           $"• Cache Policy:         {moduleA.CachePolicy}\n" +
+                           $"• Security Flags:       TLS={moduleA.TlsEncryption}, Redis={moduleA.RedisCluster}, Audit={moduleA.AuditLogging}, AutoScale={moduleA.AutoScaling}\n\n" +
+                           $"[MODULE B: API Gateway Router]\n" +
+                           $"• Memory Address Hash:  #0x{moduleB.GetHashCode():X8} (IDENTICAL!)\n" +
+                           $"• Read Host URI:        {moduleB.HostUri}\n" +
+                           $"• Read Thread Pool:     {moduleB.MaxThreads} workers\n" +
+                           $"• ReferenceEquals(A,B): {matchAB}\n\n" +
+                           $"[MODULE C: Billing & Order Processor]\n" +
+                           $"• Memory Address Hash:  #0x{moduleC.GetHashCode():X8} (IDENTICAL!)\n" +
+                           $"• Read Security TLS:    {moduleC.TlsEncryption}\n" +
+                           $"• Global Request Count: {moduleC.RequestCounter} requests processed\n" +
+                           $"• ReferenceEquals(B,C): {matchBC}\n" +
                            $"------------------------------------------------------------\n" +
-                           $"RESULT: All modules share the exact same configuration object.";
+                           $"STATUS: [PERFECT SYNC] All 3 modules point to the exact same memory instance.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
                     new()
                     {
-                        FileName = "AppSettings.cs",
+                        FileName = "AppConfiguration.cs",
                         Role = "Singleton Class",
                         Description = "Ensures only one copy exists.",
                         Code = @"namespace SettingsDemo;
 
-public sealed class AppSettings
+public sealed class AppConfiguration
 {
-    private static readonly Lazy<AppSettings> _instance = 
-        new(() => new AppSettings());
+    private static readonly Lazy<AppConfiguration> _instance = 
+        new(() => new AppConfiguration());
 
-    public static AppSettings Instance => _instance.Value;
+    public static AppConfiguration Instance => _instance.Value;
 
-    private AppSettings() { }
+    public string HostUri { get; set; } = ""localhost:5432"";
+    public int MaxThreads { get; set; } = 64;
+
+    private AppConfiguration() { }
 }"
                     }
                 }
@@ -447,32 +607,56 @@ public sealed class AppSettings
                 IconGeometry = "M4,2A2,2 0 0,0 2,4V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V4A2,2 0 0,0 20,2H4M4,4H20V20H4V4M6,6V10H10V6H6M14,6V10H18V6H14M6,14V18H10V14H6M14,14V18H18V14H14Z",
                 DefinitionLine1 = "Allows classes with incompatible interfaces to work together.",
                 DefinitionLine2 = "Converts calls from one format into the format expected by another system.",
-                RealLifeTitle = "Real-Life Example: Travel Plug Adapter",
+                RealLifeTitle = "Real-Life Example: Travel Plug Adapter & Payment Converter",
                 RealLifeAnalogy = "When you travel to another country, your phone charger plug doesn't fit the wall socket. You don't buy a new phone; you plug it into an adapter that connects your charger to the wall.",
                 RealLifeProblem = "Your modern app uses simple JSON format, but an older bank system only accepts old XML format.",
                 RealLifeSolution = "Write an Adapter class that takes your simple JSON data, converts it into the XML format the bank wants, and sends it.",
-                DemoTitle = "Payment Adapter Simulator",
-                DemoDescription = "Pay using modern JSON format or pass through an Adapter for older XML bank systems.",
-                InputLabel1 = "Payment Amount (₹)",
-                DefaultInput1 = "2500.00",
-                InputLabel2 = "Account ID",
-                DefaultInput2 = "ACC-9921",
-                OptionList1 = new List<string> { "Modern Gateway (JSON)", "Old Bank System (XML Adapter)" },
+                DemoTitle = "Payment Gateway Adapter Simulator",
+                DemoDescription = "Customize customer account, payment amount, integration gateway channel, currency, and security options to translate payloads dynamically.",
+                InputLabel1 = "Customer Account ID & Name",
+                DefaultInput1 = "ACC-9482 (Rohan Sharma)",
+                InputLabel2 = "Payment Amount (₹)",
+                DefaultInput2 = "14500.00",
+                OptionLabel1 = "Payment Integration Gateway",
+                OptionList1 = new List<string>
+                {
+                    "Modern UPI / REST API (Native JSON Gateway)",
+                    "Legacy Core Banking SWIFT / SOAP (XML Adapter)"
+                },
+                OptionLabel2 = "Transaction Currency & Fee Model",
+                OptionList2 = new List<string>
+                {
+                    "INR (₹ Indian Rupee - 0% Domestic Fee)",
+                    "USD ($ US Dollar - 2.5% Forex FX Fee)",
+                    "EUR (€ Euro - 2.8% Forex FX Fee)",
+                    "GBP (£ British Pound - 3.0% Forex FX Fee)"
+                },
+                ToggleLabel = "Payment Options & Security Filters",
+                ToggleList = new List<string>
+                {
+                    "Enable 2FA One-Time Passcode (OTP)",
+                    "Enable Instant Fraud Risk Scoring Filter",
+                    "Add Express Settlement Surcharge (+₹50 flat)",
+                    "Generate Itemized GST/Tax Invoice (+18%)"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Make Payment", Parameter = "pay", Description = "Runs payment through adapter." }
+                    new() { Title = "Process Transaction via Adapter", Parameter = "pay", Description = "Runs payment through adapter." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
                     string target = ctx.SelectedOption1;
-                    if (!decimal.TryParse(ctx.Input1, out decimal amount)) amount = 1000m;
-                    string cust = string.IsNullOrWhiteSpace(ctx.Input2) ? "ACC-01" : ctx.Input2;
+                    string currChoice = ctx.SelectedOption2;
+                    string currency = currChoice.Contains("USD") ? "USD" : currChoice.Contains("EUR") ? "EUR" : currChoice.Contains("GBP") ? "GBP" : "INR";
+
+                    if (!decimal.TryParse(ctx.Input2, out decimal amount) || amount <= 0) amount = 1000m;
+                    string cust = string.IsNullOrWhiteSpace(ctx.Input1) ? "ACC-001" : ctx.Input1;
 
                     IPaymentProcessor processor = target.Contains("Modern")
                         ? new ModernStripeGateway()
                         : new LegacyBankAdapter(new LegacyBankSoapSdk());
 
-                    return processor.ProcessPayment(amount, "INR", cust);
+                    return processor.ProcessPayment(amount, currency, cust, ctx.ActiveToggles);
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -523,44 +707,76 @@ public class OldBankAdapter : IPaymentProcessor
                 RealLifeProblem = "Creating classes like SonyBasicRemote, SonyAdvancedRemote, LGBasicRemote, LGAdvancedRemote creates too many duplicate classes.",
                 RealLifeSolution = "Separate Remotes from Devices. The Remote simply holds a link to any Device and tells it what to do.",
                 DemoTitle = "Universal Remote Bridge Simulator",
-                DemoDescription = "Pair any remote control with any appliance and send commands.",
-                OptionList1 = new List<string> { "Smart Remote Control", "Basic Button Remote" },
-                OptionList2 = new List<string> { "Living Room TV", "Home Audio Receiver", "Air Conditioner" },
+                DemoDescription = "Customize zone name, power/volume level, remote control abstraction, appliance implementation, and advanced modes.",
+                InputLabel1 = "Smart Home Room / Zone",
+                DefaultInput1 = "Master Living Room & Entertainment Center",
+                InputLabel2 = "Target Volume / Temp Level (0-100%)",
+                DefaultInput2 = "65",
+                OptionLabel1 = "Remote Controller Abstraction",
+                OptionList1 = new List<string>
+                {
+                    "AI Voice Assistant Remote (Siri / Alexa)",
+                    "Mobile App Remote (iOS & Android Touch)",
+                    "Basic Physical Remote"
+                },
+                OptionLabel2 = "Connected Device Implementation",
+                OptionList2 = new List<string>
+                {
+                    "Sony Bravia 4K OLED Smart TV",
+                    "Yamaha Dolby Atmos 7.2 Home Theater Receiver",
+                    "Daikin Inverter Climate Air Conditioner",
+                    "Philips Hue Smart Ambient Light Strip"
+                },
+                ToggleLabel = "Special Appliance Features",
+                ToggleList = new List<string>
+                {
+                    "Eco Power Saving Mode",
+                    "Spatial Audio Calibration",
+                    "Ambient Night Dimmer",
+                    "30-Minute Sleep Timer"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Power Button", Parameter = "power", Description = "Toggles power." },
-                    new() { Title = "Volume Up (+10%)", Parameter = "vol_up", Description = "Increases volume." },
-                    new() { Title = "Mute Audio", Parameter = "mute", Description = "Mutes device." }
+                    new() { Title = "Power Toggle", Parameter = "power", Description = "Toggles power." },
+                    new() { Title = "Calibrate Level", Parameter = "level", Description = "Sets volume or temperature level." },
+                    new() { Title = "Engage Special Mode", Parameter = "special", Description = "Applies custom mode across the bridge." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
+                    string zone = string.IsNullOrWhiteSpace(ctx.Input1) ? "Living Room" : ctx.Input1;
+                    if (!int.TryParse(ctx.Input2, out int level)) level = 50;
                     string remoteType = ctx.SelectedOption1;
                     string deviceType = ctx.SelectedOption2;
                     string action = ctx.ActionCommand;
 
-                    IDevice device = deviceType.Contains("TV") ? new SonyBraviaTv() :
-                                     deviceType.Contains("Audio") ? new YamahaSoundbar() :
-                                     new DaikinAirConditioner();
+                    IDevice device = deviceType.Contains("TV") ? new SonyTvDevice() :
+                                     deviceType.Contains("Yamaha") ? new YamahaAudioDevice() :
+                                     deviceType.Contains("Daikin") ? new DaikinAcDevice() :
+                                     new PhilipsHueDevice();
 
-                    RemoteControl remote = remoteType.Contains("Smart")
-                        ? new AdvancedRemoteControl(device)
-                        : new RemoteControl(device);
+                    RemoteControl remote = remoteType.Contains("Voice") ? new VoiceRemoteControl(device) :
+                                         remoteType.Contains("Mobile") ? new TouchAppRemoteControl(device) :
+                                         new RemoteControl(device);
+
+                    string activeMode = ctx.ActiveToggles.Count > 0 ? string.Join(", ", ctx.ActiveToggles) : "Standard Balanced";
 
                     string reaction = action switch
                     {
-                        "vol_up" => remote.VolumeUp(),
-                        "mute" when remote is AdvancedRemoteControl adv => adv.Mute(),
-                        _ => remote.TogglePower()
+                        "level" => remote.SetLevel(level),
+                        "special" => remote.SendSpecial(activeMode),
+                        _ => remote.Power()
                     };
 
-                    return $"[BRIDGE CONTROLLER RESULT]\n" +
+                    return $"[BRIDGE PATTERN DYNAMIC DISPATCH]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"• Remote Used:  {remote.GetType().Name}\n" +
-                           $"• Device:       {device.GetDeviceName()}\n" +
-                           $"• Button:       {action.ToUpper()}\n" +
-                           $"• Result:       {reaction}\n" +
+                           $"• Zone Location:     \"{zone}\"\n" +
+                           $"• Abstraction Layer: {remote.RemoteType}\n" +
+                           $"• Device Bridge:     {device.DeviceName}\n" +
+                           $"• Command Fired:     {action.ToUpper()}\n" +
+                           $"• Device Reaction:   {reaction}\n" +
+                           $"• Current State:     {remote.CheckStatus()}\n" +
                            $"------------------------------------------------------------\n" +
-                           $"RESULT: The remote and device work together without being tightly locked together.";
+                           $"BENEFIT: Remote abstraction varies independently from electronic appliance hardware.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -573,9 +789,9 @@ public class OldBankAdapter : IPaymentProcessor
 
 public interface IDevice
 {
-    void Enable();
-    void Disable();
-    int Volume { get; set; }
+    string DeviceName { get; }
+    string PowerToggle();
+    string SetLevel(int level);
 }"
                     },
                     new()
@@ -589,7 +805,7 @@ public class RemoteControl
 {
     protected readonly IDevice _device;
     public RemoteControl(IDevice device) { _device = device; }
-    public void VolumeUp() => _device.Volume += 10;
+    public string SetLevel(int level) => _device.SetLevel(level);
 }"
                     }
                 }
@@ -608,22 +824,63 @@ public class RemoteControl
                 RealLifeAnalogy = "You order a base coffee (₹250). You can add milk (+₹70), then add caramel (+₹80), and whipped cream (+₹60). Each topping adds to the description and the bill without needing 50 different coffee classes.",
                 RealLifeProblem = "Creating a separate class for every drink combination (like CoffeeWithMilk, CoffeeWithMilkAndSugar) creates hundreds of unnecessary classes.",
                 RealLifeSolution = "Wrap the coffee inside small topping objects that add their own cost and description on top of the original drink.",
-                DemoTitle = "Coffee Customizer Simulator",
-                DemoDescription = "Pick a base coffee, check any toppings, and see how the Decorator wraps the drink and calculates the total price.",
-                OptionList1 = new List<string> { "Espresso (₹250.00)", "Cold Brew (₹325.00)", "Americano (₹275.00)", "Blonde Roast (₹300.00)" },
-                ToggleList = new List<string> { "Steamed Oat Milk (+₹70.00)", "Salted Caramel Drizzle (+₹80.00)", "Madagascar Vanilla Syrup (+₹60.00)", "Whipped Cream Cloud (+₹60.00)", "Extra Double Espresso Shot (+₹120.00)" },
+                DemoTitle = "Artisan Coffee Customizer Simulator",
+                DemoDescription = "Customize customer name, order quantity, base coffee drink, cup size, and artisan toppings to dynamically wrap the object and compute live receipt details.",
+                InputLabel1 = "Customer Name / Cup Label",
+                DefaultInput1 = "Ananya's Morning Brew",
+                InputLabel2 = "Order Quantity (Number of Cups)",
+                DefaultInput2 = "2",
+                OptionLabel1 = "Base Coffee Beverage",
+                OptionList1 = new List<string>
+                {
+                    "Single-Origin Dark Espresso (Base: ₹220.00)",
+                    "Nitro Cold Brew Reserve (Base: ₹310.00)",
+                    "Caffe Americano Roast (Base: ₹260.00)",
+                    "Velvet Blonde Roast (Base: ₹290.00)",
+                    "Matcha Green Tea Latte (Base: ₹340.00)"
+                },
+                OptionLabel2 = "Cup Size & Temperature",
+                OptionList2 = new List<string>
+                {
+                    "Medium Regular 350ml (1.0x Base)",
+                    "Large Grande 475ml (+₹60.00)",
+                    "Extra Large Venti 600ml (+₹110.00)",
+                    "Iced Over Cold Craft Ice (+₹30.00)"
+                },
+                ToggleLabel = "Artisan Add-ons & Toppings",
+                ToggleList = new List<string>
+                {
+                    "Steamed Oat Milk (+₹70.00)",
+                    "Salted Caramel Drizzle (+₹80.00)",
+                    "Madagascar Vanilla Syrup (+₹60.00)",
+                    "Whipped Cream Cloud (+₹60.00)",
+                    "Extra Double Espresso Shot (+₹120.00)",
+                    "Cinnamon Dusting & Hazelnut Crunch (+₹45.00)"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Make Drink & Calculate Bill", Parameter = "order", Description = "Wraps coffee in decorators." }
+                    new() { Title = "Wrap Beverage & Print Receipt", Parameter = "order", Description = "Wraps coffee in decorators." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string baseDrink = ctx.SelectedOption1;
+                    string custName = string.IsNullOrWhiteSpace(ctx.Input1) ? "Customer" : ctx.Input1;
+                    if (!int.TryParse(ctx.Input2, out int qty) || qty <= 0) qty = 1;
 
-                    IBeverage beverage = baseDrink.Contains("Cold Brew") ? new ColdBrew() :
-                                         baseDrink.Contains("Americano") ? new Americano() :
-                                         baseDrink.Contains("Blonde") ? new BlondeRoast() :
+                    string baseChoice = ctx.SelectedOption1;
+                    string sizeChoice = ctx.SelectedOption2;
+
+                    IBeverage beverage = baseChoice.Contains("Cold Brew") ? new ColdBrew() :
+                                         baseChoice.Contains("Americano") ? new Americano() :
+                                         baseChoice.Contains("Blonde") ? new BlondeRoast() :
+                                         baseChoice.Contains("Matcha") ? new MatchaLatte() :
                                          new Espresso();
+
+                    if (sizeChoice.Contains("Grande"))
+                        beverage = new SizeDecorator(beverage, "Large Grande (475ml)", 60.00m);
+                    else if (sizeChoice.Contains("Venti"))
+                        beverage = new SizeDecorator(beverage, "Extra Large Venti (600ml)", 110.00m);
+                    else if (sizeChoice.Contains("Iced"))
+                        beverage = new SizeDecorator(beverage, "Iced Craft Cold (350ml)", 30.00m);
 
                     if (ctx.ActiveToggles.Contains("Steamed Oat Milk (+₹70.00)"))
                         beverage = new MilkDecorator(beverage);
@@ -635,16 +892,28 @@ public class RemoteControl
                         beverage = new WhippedCreamDecorator(beverage);
                     if (ctx.ActiveToggles.Contains("Extra Double Espresso Shot (+₹120.00)"))
                         beverage = new ExtraShotDecorator(beverage);
+                    if (ctx.ActiveToggles.Contains("Cinnamon Dusting & Hazelnut Crunch (+₹45.00)"))
+                        beverage = new HazelnutDecorator(beverage);
 
-                    return $"[COFFEE ORDER RECEIPT]\n" +
+                    decimal singleCost = beverage.GetCost();
+                    decimal totalOrderCost = singleCost * qty;
+                    decimal taxGst = totalOrderCost * 0.05m;
+                    decimal grandTotal = totalOrderCost + taxGst;
+
+                    return $"[DECORATOR PATTERN COFFEE POS RECEIPT]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"WRAPPED LAYERS:\n" +
+                           $"• Customer Name:   \"{custName}\"\n" +
+                           $"• Order Quantity:  {qty} cup(s)\n\n" +
+                           $"OBJECT COMPOSITION WRAPPER TRACE (IBeverage):\n" +
                            string.Join("\n", beverage.GetLayers().Select(l => $"  ↳ {l}")) + "\n\n" +
-                           $"ORDER SUMMARY:\n" +
-                           $"• Final Item:  {beverage.GetDescription()}\n" +
-                           $"• Total Price: ₹{beverage.GetCost():F2}\n" +
+                           $"FINAL RECEIPT:\n" +
+                           $"• Item Name:       {beverage.GetDescription()}\n" +
+                           $"• Single Cup Cost: ₹{singleCost:F2}\n" +
+                           $"• Subtotal ({qty}x):  ₹{totalOrderCost:F2}\n" +
+                           $"• GST (5%):        ₹{taxGst:F2}\n" +
+                           $"• Total Amount:    ₹{grandTotal:F2}\n" +
                            $"------------------------------------------------------------\n" +
-                           $"RESULT: Toppings were added dynamically on top of the base drink.";
+                           $"RESULT: Object decorated dynamically at runtime with {beverage.GetLayers().Count} layered wrappers.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -694,28 +963,53 @@ public class MilkDecorator : IBeverage
                 RealLifeProblem = "Managing 5 different devices and remotes in your code requires dozens of complicated setup steps everywhere.",
                 RealLifeSolution = "Create a single simple class (the Facade) with clean methods like WatchMovie() that manage all the devices behind the scenes.",
                 DemoTitle = "Home Theater Facade Simulator",
-                DemoDescription = "Turn on or off 4 different home theater devices with a single button click.",
-                InputLabel1 = "Movie Title",
-                DefaultInput1 = "Interstellar",
-                OptionList1 = new List<string> { "Surround Sound Mode", "Headphone Mode", "TV Speaker Mode" },
+                DemoDescription = "Set movie title, audio volume calibration, surround acoustic profile, lighting mood, and motorized automation to orchestrate all subsystems.",
+                InputLabel1 = "Movie / Streaming Title",
+                DefaultInput1 = "Oppenheimer (4K IMAX HDR)",
+                InputLabel2 = "Audio Volume (0 - 100 dB)",
+                DefaultInput2 = "72",
+                OptionLabel1 = "Surround Sound & Acoustic Profile",
+                OptionList1 = new List<string>
+                {
+                    "Dolby Atmos 7.1.4 Cinematic Master Profile",
+                    "Audiophile Spatial Studio Headphone Profile",
+                    "Late Night Dialogue Clarity Profile",
+                    "Dynamic Concert Hall Live Stage Profile"
+                },
+                OptionLabel2 = "Lighting & Ambience Mood",
+                OptionList2 = new List<string>
+                {
+                    "Cinema Midnight (10% Dim Amber Glow)",
+                    "Cozy Warm Lounge (30% Candlelight Warmth)",
+                    "Neon Sci-Fi (Teal & Magenta Cyberpunk Glow)",
+                    "Blackout Total Darkness (0% Pure Dark)"
+                },
+                ToggleLabel = "Motorized Equipment & Peripheral Automation",
+                ToggleList = new List<string>
+                {
+                    "Lower 130-inch Motorized Acoustic Projector Screen",
+                    "Activate Smart Popcorn Machine Pre-heater",
+                    "Close Motorized Blackout Window Blinds",
+                    "Engage Subwoofer Haptic Bass Shakers"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Start Movie (1-Click)", Parameter = "watch", Description = "Turns on all devices." },
-                    new() { Title = "Turn Off All Devices", Parameter = "end", Description = "Turns off all devices." }
+                    new() { Title = "🎬 Facade.WatchMovie()", Parameter = "watch", Description = "Orchestrates all subsystems." },
+                    new() { Title = "⏹ Facade.EndMovie()", Parameter = "end", Description = "Powers off all equipment." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string movie = string.IsNullOrWhiteSpace(ctx.Input1) ? "Movie" : ctx.Input1;
+                    string movie = string.IsNullOrWhiteSpace(ctx.Input1) ? "Feature Film" : ctx.Input1;
+                    if (!int.TryParse(ctx.Input2, out int volume) || volume <= 0) volume = 65;
                     string sound = ctx.SelectedOption1;
+                    string lighting = ctx.SelectedOption2;
                     string action = ctx.ActionCommand;
 
-                    var facade = new HomeTheaterFacade(
-                        new LightsSubsystem(),
-                        new ProjectorSubsystem(),
-                        new AudioSubsystem(),
-                        new StreamingPlayerSubsystem());
+                    var facade = new HomeTheaterFacade();
 
-                    return action == "end" ? facade.EndMovie() : facade.WatchMovie(movie, sound);
+                    return action == "end"
+                        ? facade.EndMovie()
+                        : facade.WatchMovie(movie, volume, sound, lighting, ctx.ActiveToggles);
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -729,12 +1023,14 @@ public class MilkDecorator : IBeverage
 public class HomeTheaterFacade
 {
     private readonly Lights _lights = new();
-    private readonly TV _tv = new();
+    private readonly Audio _audio = new();
+    private readonly Projector _projector = new();
 
-    public void WatchMovie()
+    public void WatchMovie(string title, int volume)
     {
         _lights.Dim();
-        _tv.TurnOn();
+        _audio.SetVolume(volume);
+        _projector.PowerOn(title);
     }
 }"
                     }
@@ -755,43 +1051,70 @@ public class HomeTheaterFacade
                 RealLifeProblem = "Checking repeatedly for updates wastes time, and hardcoding each person into the channel code makes it hard to add new subscribers.",
                 RealLifeSolution = "Let subscribers sign up with a Subscribe() method. When a new video is published, the channel loops through the list and sends an alert to everyone.",
                 DemoTitle = "YouTube Notification Broadcast Simulator",
-                DemoDescription = "Publish a video and see how all registered subscribers receive instant alerts.",
-                InputLabel1 = "New Video Title",
-                DefaultInput1 = "How Design Patterns Work Simply",
-                InputLabel2 = "New Subscriber Name",
-                DefaultInput2 = "Rohan Sharma",
-                ToggleList = new List<string> { "Send Mobile Notification", "Send Discord Message", "Send Email Alert" },
+                DemoDescription = "Customize channel name, video title, subscriber name, event priority, and active notification webhooks to dispatch instant alerts.",
+                InputLabel1 = "New Video / Live Stream Title",
+                DefaultInput1 = "Mastering System Architecture & Design Patterns",
+                InputLabel2 = "New Subscriber Name to Register",
+                DefaultInput2 = "Kavya Verma",
+                OptionLabel1 = "Publisher Channel Context",
+                OptionList1 = new List<string>
+                {
+                    "Tech Lead Architecture Weekly (280K Subs)",
+                    "Daily Stock Market & Crypto News (450K Subs)",
+                    "Game Dev & 3D Graphics Academy (120K Subs)",
+                    "Enterprise Cloud Dev Podcast (85K Subs)"
+                },
+                OptionLabel2 = "Broadcast Event Priority",
+                OptionList2 = new List<string>
+                {
+                    "STANDARD: New Video Upload Published",
+                    "URGENT: Live Stream Started Now (🔴 LIVE)",
+                    "COMMUNITY: Exclusive Milestone Announcement"
+                },
+                ToggleLabel = "Notification Channels & Webhooks",
+                ToggleList = new List<string>
+                {
+                    "Mobile APNs/FCM Push Alert Gateway",
+                    "Discord Community Bot Announcement Webhook",
+                    "Email Weekly Newsletter Digest Service",
+                    "Telegram VIP Channel Instant Bot"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Publish Video & Alert All", Parameter = "broadcast", Description = "Sends alert to subscribers." }
+                    new() { Title = "📢 Broadcast Event to Subscribers", Parameter = "broadcast", Description = "Sends alert to subscribers." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string video = string.IsNullOrWhiteSpace(ctx.Input1) ? "New Video" : ctx.Input1;
+                    string channelContext = ctx.SelectedOption1;
+                    string priority = ctx.SelectedOption2;
+                    string video = string.IsNullOrWhiteSpace(ctx.Input1) ? "New Announcement" : ctx.Input1;
                     string newSub = string.IsNullOrWhiteSpace(ctx.Input2) ? "Guest_User" : ctx.Input2;
-                    bool push = ctx.ActiveToggles.Contains("Send Mobile Notification");
-                    bool discord = ctx.ActiveToggles.Contains("Send Discord Message");
-                    bool email = ctx.ActiveToggles.Contains("Send Email Alert");
 
-                    var channel = new YouTubeChannel("Tech Talks");
+                    var channel = new YouTubeChannel(channelContext);
                     channel.Subscribe(new UserSubscriber(newSub));
-                    channel.Subscribe(new UserSubscriber("Priya"));
-                    channel.Subscribe(new UserSubscriber("Aarav"));
+                    channel.Subscribe(new UserSubscriber("Aarav Sharma"));
+                    channel.Subscribe(new UserSubscriber("Priya Patel"));
 
-                    if (push) channel.Subscribe(new PushGatewayObserver());
-                    if (discord) channel.Subscribe(new DiscordWebhookObserver());
-                    if (email) channel.Subscribe(new EmailDigestObserver());
+                    if (ctx.ActiveToggles.Contains("Mobile APNs/FCM Push Alert Gateway"))
+                        channel.Subscribe(new PushGatewayObserver());
+                    if (ctx.ActiveToggles.Contains("Discord Community Bot Announcement Webhook"))
+                        channel.Subscribe(new DiscordWebhookObserver());
+                    if (ctx.ActiveToggles.Contains("Email Weekly Newsletter Digest Service"))
+                        channel.Subscribe(new EmailDigestObserver());
+                    if (ctx.ActiveToggles.Contains("Telegram VIP Channel Instant Bot"))
+                        channel.Subscribe(new TelegramBotObserver());
 
-                    var logs = channel.UploadVideo(video);
+                    var logs = channel.Broadcast(video, priority);
 
-                    return $"[SUBSCRIBER NOTIFICATION DISPATCH]\n" +
+                    return $"[OBSERVER PATTERN BROADCAST DISPATCH]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"• Channel:    {channel.ChannelName}\n" +
-                           $"• Video:      \"{video}\"\n" +
-                           $"• Alerts Sent ({logs.Count} active subscribers):\n" +
+                           $"• Subject (Publisher):  {channel.ChannelName}\n" +
+                           $"• Event Dispatched:     \"{video}\"\n" +
+                           $"• Priority Level:       {priority}\n\n" +
+                           $"ACTIVE SUBSCRIBERS NOTIFIED ({logs.Count} Listeners):\n" +
                            string.Join("\n", logs) + "\n" +
                            $"------------------------------------------------------------\n" +
-                           $"RESULT: All subscribers were notified automatically.";
+                           $"STATUS: [SUCCESS] All observers notified simultaneously with zero polling overhead.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -804,24 +1127,24 @@ public class HomeTheaterFacade
 
 public interface IObserver
 {
-    string Notify(string videoTitle);
+    string Notify(string videoTitle, string channelName, string priority);
 }"
                     },
                     new()
                     {
-                        FileName = "Channel.cs",
+                        FileName = "YouTubeChannel.cs",
                         Role = "Publisher Class",
                         Description = "Keeps subscriber list and notifies all on new video.",
                         Code = @"namespace ObserverDemo;
 
-public class Channel
+public class YouTubeChannel
 {
     private readonly List<IObserver> _subscribers = new();
     public void Subscribe(IObserver sub) => _subscribers.Add(sub);
 
-    public void UploadVideo(string title)
+    public void UploadVideo(string title, string priority)
     {
-        foreach (var sub in _subscribers) sub.Notify(title);
+        foreach (var sub in _subscribers) sub.Notify(title, ""Tech"", priority);
     }
 }"
                     }
@@ -842,28 +1165,57 @@ public class Channel
                 RealLifeProblem = "Putting driving, walking, and bus route calculations into one big file with giant if-else blocks makes the code messy.",
                 RealLifeSolution = "Put each route calculation into its own class and let the map switch between them whenever the user chooses.",
                 DemoTitle = "Map Route Strategy Simulator",
-                DemoDescription = "Pick origin, destination, and travel method to calculate time, cost, and route.",
-                InputLabel1 = "Start Point",
-                DefaultInput1 = "City Center",
+                DemoDescription = "Set origin, destination, routing algorithm, traffic congestion, and trip optimization flags to compute dynamic travel time, toll fares, and carbon footprint.",
+                InputLabel1 = "Trip Departure Point",
+                DefaultInput1 = "Bandra Kurla Complex (Mumbai)",
                 InputLabel2 = "Destination Point",
-                DefaultInput2 = "Airport Terminal",
-                OptionList1 = new List<string> { "Highway Driving Route", "Scenic Bicycle Route", "Public Bus/Train Route" },
+                DefaultInput2 = "Pune Tech Park (Hinjawadi)",
+                OptionLabel1 = "Navigation Strategy Algorithm",
+                OptionList1 = new List<string>
+                {
+                    "Highway Express Strategy (Fastest / Tolls Included)",
+                    "Scenic Greenway Bicycle Route (Zero Carbon / Healthy)",
+                    "Metropolitan Public Transit (Metro + Express Train)",
+                    "Eco-Optimized Electric Vehicle Route (EV Charger Stops)"
+                },
+                OptionLabel2 = "Traffic & Congestion Conditions",
+                OptionList2 = new List<string>
+                {
+                    "Normal Flowing Traffic (1.0x Time)",
+                    "Peak Rush Hour Congestion (1.45x Time)",
+                    "Heavy Monsoon Rains & Slow Traffic (1.8x Time)",
+                    "Late Night Empty Highways (0.85x Time)"
+                },
+                ToggleLabel = "Trip Preferences & Flags",
+                ToggleList = new List<string>
+                {
+                    "Avoid Highway Tolls (Reroute via State Highways)",
+                    "Include Live EV Fast Charging Stops (+20 mins)",
+                    "Carpool / High-Occupancy Vehicle Lane Enabled",
+                    "Include Real-Time Carbon Footprint Offset Analysis"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Calculate Route", Parameter = "nav", Description = "Runs selected route strategy." }
+                    new() { Title = "Calculate Route via Strategy", Parameter = "nav", Description = "Runs selected route strategy." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string origin = string.IsNullOrWhiteSpace(ctx.Input1) ? "Start" : ctx.Input1;
+                    string origin = string.IsNullOrWhiteSpace(ctx.Input1) ? "Origin" : ctx.Input1;
                     string dest = string.IsNullOrWhiteSpace(ctx.Input2) ? "Destination" : ctx.Input2;
-                    string choice = ctx.SelectedOption1;
+                    string stratChoice = ctx.SelectedOption1;
+                    string trafficChoice = ctx.SelectedOption2;
 
-                    IRouteStrategy strategy = choice.Contains("Highway") ? new HighwayExpressStrategy() :
-                                             choice.Contains("Bicycle") ? new BicycleScenicStrategy() :
-                                             new PublicTransitStrategy();
+                    double trafficMultiplier = trafficChoice.Contains("1.45") ? 1.45 :
+                                               trafficChoice.Contains("1.8") ? 1.80 :
+                                               trafficChoice.Contains("0.85") ? 0.85 : 1.00;
+
+                    IRouteStrategy strategy = stratChoice.Contains("Highway") ? new HighwayExpressStrategy() :
+                                             stratChoice.Contains("Bicycle") ? new BicycleScenicStrategy() :
+                                             stratChoice.Contains("Transit") ? new PublicTransitStrategy() :
+                                             new EvEcoStrategy();
 
                     var navigator = new NavigatorContext(strategy);
-                    return navigator.Calculate(origin, dest);
+                    return navigator.Calculate(origin, dest, trafficMultiplier, ctx.ActiveToggles);
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -876,7 +1228,7 @@ public class Channel
 
 public interface IRouteStrategy
 {
-    string CalculateRoute(string from, string to);
+    RouteResult CalculateRoute(string from, string to, double traffic);
 }"
                     },
                     new()
@@ -891,7 +1243,7 @@ public class Navigator
     private IRouteStrategy _strategy;
     public Navigator(IRouteStrategy strategy) { _strategy = strategy; }
     public void SetStrategy(IRouteStrategy strategy) => _strategy = strategy;
-    public string Go(string from, string to) => _strategy.CalculateRoute(from, to);
+    public RouteResult Navigate(string from, string to) => _strategy.CalculateRoute(from, to, 1.0);
 }"
                     }
                 }
@@ -911,62 +1263,87 @@ public class Navigator
                 RealLifeProblem = "Directly running code from buttons makes it hard to support Undo, Redo, or save a history of past actions.",
                 RealLifeSolution = "Turn each action into a Command object with Execute() and Undo() methods, and save them in a history stack.",
                 DemoTitle = "Text Editor Undo / Redo Simulator",
-                DemoDescription = "Type words, run formatting commands, and click Undo to step back in history.",
-                InputLabel1 = "Text to Add",
-                DefaultInput1 = "Design Patterns",
+                DemoDescription = "Type custom text, select text transformation commands, and trigger Undo to step backward through the history stack.",
+                InputLabel1 = "Custom Text / Snippet to Add",
+                DefaultInput1 = "Design patterns produce clean and decoupled architectures.",
+                InputLabel2 = "Author / Editor Tag",
+                DefaultInput2 = "JK_LeadArchitect",
+                OptionLabel1 = "Text Transformation Action",
+                OptionList1 = new List<string>
+                {
+                    "Insert Custom Text Snippet",
+                    "Convert Entire Buffer to UPPERCASE",
+                    "Convert Entire Buffer to Title Case",
+                    "Wrap Buffer in Markdown Quotes (> )",
+                    "Clear Entire Buffer (Destructive Action)"
+                },
+                OptionLabel2 = "History Stack Buffer Size",
+                OptionList2 = new List<string>
+                {
+                    "Standard History Stack (10 Levels)",
+                    "Extended History Stack (50 Levels)",
+                    "Unlimited Persistent Session History"
+                },
+                ToggleLabel = "Editor Metadata & Formatting",
+                ToggleList = new List<string>
+                {
+                    "Auto-Append Timestamp Header",
+                    "Include Word & Character Count Analytics"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
-                    new() { Title = "Add Text Command", Parameter = "insert", Description = "Runs text insertion and adds to undo stack." },
-                    new() { Title = "Convert to Uppercase", Parameter = "upper", Description = "Runs uppercase command." },
-                    new() { Title = "Undo Last Action", Parameter = "undo", Description = "Pops latest command and calls Undo()." }
+                    new() { Title = "➕ Execute Selected Command", Parameter = "execute", Description = "Pushes command onto history stack." },
+                    new() { Title = "⟲ Undo Last Command", Parameter = "undo", Description = "Pops latest command and calls Undo()." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string text = string.IsNullOrWhiteSpace(ctx.Input1) ? "Hello" : ctx.Input1;
+                    string text = string.IsNullOrWhiteSpace(ctx.Input1) ? "Clean Code" : ctx.Input1;
+                    string author = string.IsNullOrWhiteSpace(ctx.Input2) ? "Author" : ctx.Input2;
+                    string actionChoice = ctx.SelectedOption1;
                     string action = ctx.ActionCommand;
 
-                    var editor = new TextEditor { Buffer = "My Document" };
+                    var editor = new TextEditor { Buffer = "Initial Document Buffer" };
                     var history = new CommandHistory();
 
-                    var insertCmd = new InsertTextCommand(editor, $": {text}");
-                    insertCmd.Execute();
-                    history.Push(insertCmd);
+                    var initialCmd = new InsertTextCommand(editor, $"[{author}] Start");
+                    initialCmd.Execute();
+                    history.Push(initialCmd);
 
-                    if (action == "upper")
+                    if (action == "undo")
                     {
-                        var upperCmd = new ChangeCaseCommand(editor);
-                        upperCmd.Execute();
-                        history.Push(upperCmd);
-
-                        return $"[COMMAND EXECUTED: UPPERCASE]\n" +
-                               $"------------------------------------------------------------\n" +
-                               $"• Command Name:    {upperCmd.GetName()}\n" +
-                               $"• Current Content: \"{editor.Buffer}\"\n" +
-                               $"• Undo Stack:      2 commands saved\n" +
-                               $"------------------------------------------------------------\n" +
-                               $"STATUS: Action completed and saved to history.";
-                    }
-                    else if (action == "undo")
-                    {
-                        ICommand? popped = history.Pop();
+                        var popped = history.Pop();
                         popped?.Undo();
 
-                        return $"[COMMAND UNDO RESULT]\n" +
+                        return $"[COMMAND PATTERN: UNDO OPERATION]\n" +
                                $"------------------------------------------------------------\n" +
-                               $"• Rolled Back:     {popped?.GetName()}\n" +
-                               $"• Restored Text:   \"{editor.Buffer}\"\n" +
-                               $"• Remaining Stack: {history.Count} command(s)\n" +
+                               $"• Popped Command:    {popped?.CommandName}\n" +
+                               $"• Invoked:           ICommand.Undo()\n" +
+                               $"• Restored Buffer:   \"{editor.Buffer}\"\n" +
+                               $"• Remaining Stack:   {history.Count} command(s) in history\n" +
                                $"------------------------------------------------------------\n" +
-                               $"STATUS: Action undone cleanly.";
+                               $"STATUS: State restored cleanly via encapsulated Command object.";
                     }
 
-                    return $"[COMMAND EXECUTED: ADD TEXT]\n" +
+                    ICommand cmdToRun = actionChoice.Contains("Insert")
+                        ? new InsertTextCommand(editor, text)
+                        : new TransformCaseCommand(editor, actionChoice);
+
+                    cmdToRun.Execute();
+                    history.Push(cmdToRun);
+
+                    bool showStats = ctx.ActiveToggles.Contains("Include Word & Character Count Analytics");
+                    string wordStats = showStats
+                        ? $"\n• Character Count:   {editor.Buffer.Length} chars | Word Count: {editor.Buffer.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length} words"
+                        : "";
+
+                    return $"[COMMAND PATTERN: EXECUTED COMMAND]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"• Command Name:    {insertCmd.GetName()}\n" +
-                           $"• Current Content: \"{editor.Buffer}\"\n" +
-                           $"• Undo Stack:      1 command saved\n" +
+                           $"• Executed Action:   {cmdToRun.CommandName}\n" +
+                           $"• Active Buffer:     \"{editor.Buffer}\"{wordStats}\n" +
+                           $"• Active Undo Stack ({history.Count} items):\n" +
+                           string.Join("\n", history.GetHistoryList().Select((c, i) => $"   [{i + 1}] {c}")) + "\n" +
                            $"------------------------------------------------------------\n" +
-                           $"STATUS: Text added and recorded.";
+                           $"STATUS: Command encapsulated as stand-alone object with full Undo state.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -979,6 +1356,7 @@ public class Navigator
 
 public interface ICommand
 {
+    string CommandName { get; }
     void Execute();
     void Undo();
 }"
@@ -994,9 +1372,11 @@ public class InsertCommand : ICommand
 {
     private string _oldText = """";
     private readonly TextEditor _editor;
+    public string CommandName => ""InsertCommand"";
+
     public InsertCommand(TextEditor ed) { _editor = ed; }
 
-    public void Execute() { _oldText = _editor.Text; _editor.Text += "" New""; }
+    public void Execute() { _oldText = _editor.Text; _editor.Text += "" New Text""; }
     public void Undo() { _editor.Text = _oldText; }
 }"
                     }
@@ -1016,19 +1396,50 @@ public class InsertCommand : ICommand
                 RealLifeAnalogy = "When your phone is locked, tapping the screen only shows the clock. When it is unlocked, the exact same tap opens apps. The phone changes its behavior based on whether it is Locked or Unlocked.",
                 RealLifeProblem = "Writing giant if-else blocks like 'if (isLocked) ... else if (isPlaying) ...' inside every button makes the code messy and easy to break.",
                 RealLifeSolution = "Create a separate class for each state (Stopped, Playing, Paused, Locked) and let the player pass button clicks to whichever state is active.",
-                DemoTitle = "Music Player State Simulator",
-                DemoDescription = "Click buttons to see how the player transitions between Playing, Paused, and Locked states.",
-                OptionList1 = new List<string> { "State: Stopped", "State: Playing", "State: Paused", "State: Locked" },
+                DemoTitle = "Audio Media Player State Machine",
+                DemoDescription = "Configure track name, streaming bitrate, equalizer profile, and starting state to test dynamic state machine transitions.",
+                InputLabel1 = "Audio Track Name & Artist",
+                DefaultInput1 = "Interstellar Main Theme - Hans Zimmer",
+                InputLabel2 = "Audio Playback Bitrate (kbps)",
+                DefaultInput2 = "320",
+                OptionLabel1 = "Player Initial State",
+                OptionList1 = new List<string>
+                {
+                    "State: Stopped (Ready to Stream)",
+                    "State: Playing (Active Stream)",
+                    "State: Paused (Frozen Buffer)",
+                    "State: Locked (Controls Locked)"
+                },
+                OptionLabel2 = "Equalizer Acoustic Preset",
+                OptionList2 = new List<string>
+                {
+                    "Dynamic Bass Boost Profile",
+                    "Vocal Clarity Acoustic Profile",
+                    "Flat Studio Reference Profile",
+                    "Dolby Spatial Surround Profile"
+                },
+                ToggleLabel = "Hi-Res Audio Capabilities",
+                ToggleList = new List<string>
+                {
+                    "Enable Headphone Spatial Audio",
+                    "Enable Lossless FLAC Hi-Res Audio",
+                    "Enable Crossfade Between Tracks (3s)",
+                    "Enable Sleep Timer Auto-Stop"
+                },
                 DemoActions = new List<DemoActionItem>
                 {
                     new() { Title = "▶ Play Button", Parameter = "play", Description = "Sends Play to current state." },
                     new() { Title = "⏸ Pause Button", Parameter = "pause", Description = "Sends Pause to current state." },
-                    new() { Title = "🔒 Lock Button", Parameter = "lock", Description = "Sends Lock to current state." }
+                    new() { Title = "🔒 Lock / Unlock Button", Parameter = "lock", Description = "Sends Lock to current state." }
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string action = ctx.ActionCommand;
+                    string track = string.IsNullOrWhiteSpace(ctx.Input1) ? "Master Audio Track" : ctx.Input1;
+                    if (!int.TryParse(ctx.Input2, out int bitrate) || bitrate <= 0) bitrate = 320;
+
                     string choice = ctx.SelectedOption1;
+                    string eq = ctx.SelectedOption2;
+                    string action = ctx.ActionCommand;
 
                     var context = new AudioPlayerContext();
                     if (choice.Contains("Playing")) context.State = new PlayingState();
@@ -1041,17 +1452,22 @@ public class InsertCommand : ICommand
                     {
                         "pause" => context.State.ClickPause(context),
                         "lock" => context.State.ClickLock(context),
-                        _ => context.State.ClickPlay(context)
+                        _ => context.State.ClickPlay(context, track, bitrate, eq)
                     };
 
-                    return $"[PLAYER STATE TRANSITION RESULT]\n" +
+                    bool spatial = ctx.ActiveToggles.Contains("Enable Headphone Spatial Audio");
+
+                    return $"[AUDIO PLAYER STATE MACHINE TRANSITION]\n" +
                            $"------------------------------------------------------------\n" +
-                           $"• Previous State: {prevState}\n" +
-                           $"• Button Clicked: {action.ToUpper()}\n" +
-                           $"• Action Result:  {transition}\n" +
-                           $"• Current State:  {context.State.StateName}\n" +
+                           $"• Audio Track:       \"{track}\"\n" +
+                           $"• Bitrate & EQ:      {bitrate} kbps | EQ: [{eq}]\n" +
+                           $"• Spatial Audio:     {(spatial ? "Enabled" : "Disabled")}\n" +
+                           $"• Previous State:    {prevState}\n" +
+                           $"• Button Dispatched: Click{char.ToUpper(action[0])}{action[1..]}()\n" +
+                           $"• Execution Log:     {transition}\n" +
+                           $"• Active State Now:  {context.State.StateName}\n" +
                            $"------------------------------------------------------------\n" +
-                           $"RESULT: The player changed its response based on its active state.";
+                           $"STATUS: Player alters behavior dynamically via encapsulated State object delegation.";
                 },
                 CodeFiles = new List<CodeFileItem>
                 {
@@ -1064,8 +1480,10 @@ public class InsertCommand : ICommand
 
 public interface IPlayerState
 {
-    string Play(PlayerContext context);
-    string Pause(PlayerContext context);
+    string StateName { get; }
+    string ClickPlay(AudioPlayerContext ctx, string track, int bitrate, string eq);
+    string ClickPause(AudioPlayerContext ctx);
+    string ClickLock(AudioPlayerContext ctx);
 }"
                     },
                     new()
@@ -1077,12 +1495,14 @@ public interface IPlayerState
 
 public class PlayingState : IPlayerState
 {
-    public string Play(PlayerContext context) => ""Already playing music."";
-    public string Pause(PlayerContext context)
+    public string StateName => ""Playing State"";
+    public string ClickPlay(AudioPlayerContext ctx, string track, int bitrate, string eq) => ""Already playing."";
+    public string ClickPause(AudioPlayerContext ctx)
     {
-        context.State = new PausedState();
+        ctx.State = new PausedState();
         return ""Music paused."";
     }
+    public string ClickLock(AudioPlayerContext ctx) => ""Locked in playback."";
 }"
                     }
                 }
