@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace DesignPatternCatalog.Services.PatternImplementations;
 
+// Design Pattern: Adapter
+// Code Components: IPaymentProcessor, ModernStripeGateway, LegacyBankSoapSdk, LegacyBankAdapter
+// Purpose: Translates modern application payment payloads into legacy SOAP XML envelopes so legacy core banking systems can process transactions seamlessly.
+
 public interface IPaymentProcessor
 {
     string GatewayName { get; }
@@ -127,6 +131,10 @@ public class LegacyBankAdapter : IPaymentProcessor
     }
 }
 
+// Design Pattern: Bridge
+// Code Components: IDevice, SonyTvDevice, YamahaAudioDevice, DaikinAcDevice, PhilipsHueDevice, RemoteControl, AdvancedRemoteControl, VoiceRemoteControl, TouchAppRemoteControl
+// Purpose: Decouples remote controller abstractions from smart appliance hardware implementations, allowing remotes and devices to vary and scale independently.
+
 public interface IDevice
 {
     string DeviceName { get; }
@@ -140,9 +148,16 @@ public interface IDevice
 
 public class SonyTvDevice : IDevice
 {
-    public string DeviceName => "Sony Bravia 4K OLED Smart TV";
-    public bool IsPowered { get; private set; } = true;
-    public int VolumeOrLevel { get; set; } = 45;
+    public string DeviceName { get; }
+    public bool IsPowered { get; private set; }
+    public int VolumeOrLevel { get; set; }
+
+    public SonyTvDevice(string name = "Sony Bravia 4K OLED Smart TV", int initialLevel = 50, bool isPowered = true)
+    {
+        DeviceName = name;
+        VolumeOrLevel = initialLevel;
+        IsPowered = isPowered;
+    }
 
     public string PowerToggle() { IsPowered = !IsPowered; return $"Sony TV Power is now {(IsPowered ? "ON (HDMI 1 Active)" : "STANDBY")}."; }
     public string SetLevel(int level) { VolumeOrLevel = Math.Clamp(level, 0, 100); return $"Sony TV Volume calibrated to {VolumeOrLevel}%."; }
@@ -152,9 +167,16 @@ public class SonyTvDevice : IDevice
 
 public class YamahaAudioDevice : IDevice
 {
-    public string DeviceName => "Yamaha Dolby Atmos 7.2 Home Theater Receiver";
-    public bool IsPowered { get; private set; } = true;
-    public int VolumeOrLevel { get; set; } = 60;
+    public string DeviceName { get; }
+    public bool IsPowered { get; private set; }
+    public int VolumeOrLevel { get; set; }
+
+    public YamahaAudioDevice(string name = "Yamaha Dolby Atmos 7.2 Home Theater Receiver", int initialLevel = 50, bool isPowered = true)
+    {
+        DeviceName = name;
+        VolumeOrLevel = initialLevel;
+        IsPowered = isPowered;
+    }
 
     public string PowerToggle() { IsPowered = !IsPowered; return $"Yamaha Receiver Power is now {(IsPowered ? "ON (7.2 Speakers Active)" : "OFF")}."; }
     public string SetLevel(int level) { VolumeOrLevel = Math.Clamp(level, 0, 100); return $"Yamaha Audio Master Gain set to {VolumeOrLevel}% ({VolumeOrLevel - 80} dB)."; }
@@ -164,9 +186,16 @@ public class YamahaAudioDevice : IDevice
 
 public class DaikinAcDevice : IDevice
 {
-    public string DeviceName => "Daikin Inverter Climate Air Conditioner";
-    public bool IsPowered { get; private set; } = true;
-    public int VolumeOrLevel { get; set; } = 22;
+    public string DeviceName { get; }
+    public bool IsPowered { get; private set; }
+    public int VolumeOrLevel { get; set; }
+
+    public DaikinAcDevice(string name = "Daikin Inverter Climate Air Conditioner", int initialTemp = 24, bool isPowered = true)
+    {
+        DeviceName = name;
+        VolumeOrLevel = initialTemp;
+        IsPowered = isPowered;
+    }
 
     public string PowerToggle() { IsPowered = !IsPowered; return $"Daikin AC is now {(IsPowered ? "COOLING ACTIVE" : "OFF")}."; }
     public string SetLevel(int level) { VolumeOrLevel = Math.Clamp(level, 16, 30); return $"Daikin Thermostat temperature set to {VolumeOrLevel}°C."; }
@@ -176,9 +205,16 @@ public class DaikinAcDevice : IDevice
 
 public class PhilipsHueDevice : IDevice
 {
-    public string DeviceName => "Philips Hue Smart Ambient Light Strip";
-    public bool IsPowered { get; private set; } = true;
-    public int VolumeOrLevel { get; set; } = 75;
+    public string DeviceName { get; }
+    public bool IsPowered { get; private set; }
+    public int VolumeOrLevel { get; set; }
+
+    public PhilipsHueDevice(string name = "Philips Hue Smart Ambient Light Strip", int initialBrightness = 50, bool isPowered = true)
+    {
+        DeviceName = name;
+        VolumeOrLevel = initialBrightness;
+        IsPowered = isPowered;
+    }
 
     public string PowerToggle() { IsPowered = !IsPowered; return $"Hue Ambient Lights are now {(IsPowered ? "ILLUMINATED" : "OFF")}."; }
     public string SetLevel(int level) { VolumeOrLevel = Math.Clamp(level, 0, 100); return $"Hue Light Brightness dimmed to {VolumeOrLevel}%."; }
@@ -216,6 +252,10 @@ public class TouchAppRemoteControl : RemoteControl
     public override string SendSpecial(string cmd) =>
         $"[Touch Screen Widget Slider Triggered \"{cmd}\"] -> {_device.ApplyMode(cmd)}";
 }
+
+// Design Pattern: Decorator
+// Code Components: IBeverage, Espresso, ColdBrew, Americano, BlondeRoast, MatchaLatte, BeverageDecorator, SizeDecorator, MilkDecorator, CaramelDecorator, VanillaDecorator, WhippedCreamDecorator, ExtraShotDecorator, HazelnutDecorator
+// Purpose: Dynamically layers toppings, sizes, and addons onto base beverages at runtime to calculate cumulative costs and descriptions without class explosion.
 
 public interface IBeverage
 {
@@ -292,13 +332,21 @@ public class SizeDecorator : BeverageDecorator
 
 public class MilkDecorator : BeverageDecorator
 {
-    public MilkDecorator(IBeverage beverage) : base(beverage) { }
-    public override string GetDescription() => $"{base.GetDescription()}, Steamed Oat Milk";
-    public override decimal GetCost() => base.GetCost() + 70.00m;
+    private readonly string _milkType;
+    private readonly decimal _extraCost;
+
+    public MilkDecorator(IBeverage beverage, string milkType = "Steamed Oat Milk", decimal extraCost = 70.00m) : base(beverage)
+    {
+        _milkType = milkType;
+        _extraCost = extraCost;
+    }
+
+    public override string GetDescription() => $"{base.GetDescription()}, {_milkType}";
+    public override decimal GetCost() => base.GetCost() + _extraCost;
     public override List<string> GetLayers()
     {
         var list = base.GetLayers();
-        list.Add("Topping: MilkDecorator (+₹70.00)");
+        list.Add($"Topping: {_milkType} (+₹{_extraCost:F2})");
         return list;
     }
 }
@@ -367,6 +415,10 @@ public class HazelnutDecorator : BeverageDecorator
         return list;
     }
 }
+
+// Design Pattern: Facade
+// Code Components: LightingSubsystem, AudioSubsystem, ProjectorSubsystem, MotorizedHardwareSubsystem, HomeTheaterFacade
+// Purpose: Encapsulates multiple complex smart home hardware subsystems behind clean, unified commands like WatchMovie() and EndMovie().
 
 public class LightingSubsystem
 {

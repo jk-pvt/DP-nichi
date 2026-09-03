@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace DesignPatternCatalog.Services.PatternImplementations;
 
+// Design Pattern: Factory Method
+// Code Components: ITransport, HighwayTruck, CargoContainerShip, Boeing777Freighter, AutonomousDroneFleet, Logistics, RoadLogistics, SeaLogistics, AirLogistics, DroneLogistics
+// Purpose: Dynamically creates and configures the appropriate transport vehicle class based on logistics route mode (road, sea, air, drone) to calculate shipping costs and telemetry.
+
 public interface ITransport
 {
     string VehicleName { get; }
@@ -147,6 +151,10 @@ public class DroneLogistics : Logistics
     public override ITransport CreateTransport() => new AutonomousDroneFleet();
 }
 
+// Design Pattern: Abstract Factory
+// Code Components: IButton, ICheckbox, ITextBox, IWindow, IUIFactory, MacUIFactory, WindowsUIFactory, LinuxUIFactory, CyberpunkUIFactory, DynamicUIApp
+// Purpose: Manufactures cohesive families of matching UI controls (buttons, checkboxes, text fields, windows) tailored to the selected theme/OS environment.
+
 public interface IButton { string Render(string label, string accent); }
 public interface ICheckbox { string Render(string label, string accent); }
 public interface ITextBox { string Render(string label, string accent); }
@@ -263,13 +271,17 @@ public class DynamicUIApp
     }
 }
 
+// Design Pattern: Builder
+// Code Components: Computer, IComputerBuilder, CustomComputerBuilder
+// Purpose: Constructs customized PC builds step-by-step with individual hardware components, calculating total cost, power draw, and budget compliance dynamically.
+
 public class Computer
 {
-    public string BuildName { get; set; } = "Custom Workstation";
-    public double TargetBudget { get; set; } = 150000;
-    public string Motherboard { get; set; } = "ASUS ROG Gaming Board";
-    public double MotherboardPrice { get; set; } = 28000;
-    public int MotherboardWatts { get; set; } = 75;
+    public string BuildName { get; set; } = string.Empty;
+    public double TargetBudget { get; set; }
+    public string Motherboard { get; set; } = string.Empty;
+    public double MotherboardPrice { get; set; }
+    public int MotherboardWatts { get; set; }
 
     public string CPU { get; set; } = string.Empty;
     public double CpuPrice { get; set; }
@@ -306,8 +318,8 @@ public class Computer
 
         double budgetDiff = TargetBudget - totalPrice;
         string budgetStatus = budgetDiff >= 0
-            ? $"✅ UNDER BUDGET by ₹{budgetDiff:N2} ({(totalPrice / TargetBudget * 100):F1}% of limit utilized)"
-            : $"⚠️ OVER BUDGET by ₹{Math.Abs(budgetDiff):N2} ({(totalPrice / TargetBudget * 100):F1}% of limit utilized)";
+            ? $"✅ UNDER BUDGET by ₹{budgetDiff:N2} ({(TargetBudget > 0 ? (totalPrice / TargetBudget * 100) : 0):F1}% of limit utilized)"
+            : $"⚠️ OVER BUDGET by ₹{Math.Abs(budgetDiff):N2} ({(TargetBudget > 0 ? (totalPrice / TargetBudget * 100) : 0):F1}% of limit utilized)";
 
         return $"[BUILDER STEP-BY-STEP COMPUTER ASSEMBLY]\n" +
                $"------------------------------------------------------------\n" +
@@ -372,6 +384,10 @@ public class CustomComputerBuilder : IComputerBuilder
     }
 }
 
+// Design Pattern: Prototype
+// Code Components: IPrototype<T>, DocumentTemplate
+// Purpose: Duplicates master legal/commercial document templates in memory, allowing instant customization of recipient and section addendums without rebuilding from scratch.
+
 public interface IPrototype<T>
 {
     T Clone();
@@ -382,7 +398,7 @@ public class DocumentTemplate : IPrototype<DocumentTemplate>
     public string Title { get; set; } = string.Empty;
     public string Recipient { get; set; } = string.Empty;
     public string ReferenceCode { get; set; } = string.Empty;
-    public string PriorityWatermark { get; set; } = "Standard";
+    public string PriorityWatermark { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public List<string> Sections { get; set; } = new();
 
@@ -400,21 +416,36 @@ public class DocumentTemplate : IPrototype<DocumentTemplate>
     }
 }
 
+// Design Pattern: Singleton
+// Code Components: AppConfiguration
+// Purpose: Maintains a single thread-safe configuration instance across the entire application lifetime, ensuring all modules access synchronized settings.
+
 public sealed class AppConfiguration
 {
     private static readonly Lazy<AppConfiguration> _instance = new(() => new AppConfiguration());
     public static AppConfiguration Instance => _instance.Value;
 
     public DateTime InitializedAt { get; } = DateTime.UtcNow;
-    public string HostUri { get; set; } = "db-cluster.internal:5432";
-    public int MaxThreads { get; set; } = 64;
-    public string Environment { get; set; } = "Production";
-    public string CachePolicy { get; set; } = "Standard TTL (15m)";
-    public bool RedisCluster { get; set; } = true;
-    public bool TlsEncryption { get; set; } = true;
-    public bool AuditLogging { get; set; } = true;
-    public bool AutoScaling { get; set; } = false;
-    public int RequestCounter { get; set; } = 1042;
+    public string HostUri { get; set; }
+    public int MaxThreads { get; set; }
+    public string Environment { get; set; }
+    public string CachePolicy { get; set; }
+    public bool RedisCluster { get; set; }
+    public bool TlsEncryption { get; set; }
+    public bool AuditLogging { get; set; }
+    public bool AutoScaling { get; set; }
+    public int RequestCounter { get; set; }
 
-    private AppConfiguration() { }
+    private AppConfiguration()
+    {
+        HostUri = System.Environment.GetEnvironmentVariable("APP_DB_HOST") ?? $"{System.Environment.MachineName.ToLower()}.cluster.internal:5432";
+        MaxThreads = System.Environment.ProcessorCount * 16;
+        Environment = System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "DynamicProduction";
+        CachePolicy = "Adaptive TTL Dynamic Policy";
+        RedisCluster = true;
+        TlsEncryption = true;
+        AuditLogging = true;
+        AutoScaling = System.Environment.ProcessorCount > 4;
+        RequestCounter = new Random().Next(1000, 9999);
+    }
 }

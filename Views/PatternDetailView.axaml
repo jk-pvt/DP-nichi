@@ -168,7 +168,7 @@
                                     <StackPanel Grid.Column="0" Margin="0,0,8,0" IsVisible="{Binding HasOptionList1}" Spacing="4">
                                         <TextBlock Text="{Binding Pattern.OptionLabel1}" FontSize="11.5" Foreground="#AAAAAA" />
                                         <ComboBox ItemsSource="{Binding OptionList1}" 
-                                                  SelectedItem="{Binding SelectedOption1}" 
+                                                  SelectedItem="{Binding SelectedOption3}" 
                                                   HorizontalAlignment="Stretch" />
                                     </StackPanel>
 

@@ -5,6 +5,10 @@ using System.Linq;
 
 namespace DesignPatternCatalog.Services.PatternImplementations;
 
+// Design Pattern: Observer
+// Code Components: IObserver, UserSubscriber, PushGatewayObserver, DiscordWebhookObserver, EmailDigestObserver, TelegramBotObserver, ISubject, YouTubeChannel
+// Purpose: Automatically broadcasts instant multi-channel push, email, and chat notifications to all registered subscriber listeners when publisher events occur.
+
 public interface IObserver
 {
     string ObserverType { get; }
@@ -84,6 +88,10 @@ public class YouTubeChannel : ISubject
         return logs;
     }
 }
+
+// Design Pattern: Strategy
+// Code Components: RouteResult, IRouteStrategy, HighwayExpressStrategy, BicycleScenicStrategy, PublicTransitStrategy, EvEcoStrategy, NavigatorContext
+// Purpose: Encapsulates interchangeable route navigation algorithms (express highway, bike trail, transit, EV) to calculate travel time, fare, and carbon metrics dynamically.
 
 public class RouteResult
 {
@@ -221,6 +229,10 @@ public class NavigatorContext
     }
 }
 
+// Design Pattern: Command
+// Code Components: ICommand, TextEditor, InsertTextCommand, TransformCaseCommand, CommandHistory
+// Purpose: Encapsulates editor operations as discrete command objects with full execution and reverse Undo capabilities stored on a history stack.
+
 public interface ICommand
 {
     string CommandName { get; }
@@ -301,6 +313,10 @@ public class CommandHistory
     public int Count => _history.Count;
     public IEnumerable<string> GetHistoryList() => _history.Select(c => c.CommandName);
 }
+
+// Design Pattern: State
+// Code Components: IAudioState, StoppedState, PlayingState, PausedState, LockedState, AudioPlayerContext
+// Purpose: Controls media playback lifecycle and button interactions by dynamically transitioning the active state object (stopped, playing, paused, locked).
 
 public interface IAudioState
 {

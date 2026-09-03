@@ -48,7 +48,7 @@ public partial class PatternDetailViewModel : ViewModelBase
     private string _input2 = string.Empty;
 
     [ObservableProperty]
-    private string _selectedOption1 = string.Empty;
+    private string _SelectedOption3 = string.Empty;
 
     [ObservableProperty]
     private string _selectedOption2 = string.Empty;
@@ -79,7 +79,7 @@ public partial class PatternDetailViewModel : ViewModelBase
         Input2 = pattern.DefaultInput2;
 
         foreach (var opt in pattern.OptionList1) OptionList1.Add(opt);
-        SelectedOption1 = OptionList1.FirstOrDefault() ?? string.Empty;
+        SelectedOption3 = OptionList1.FirstOrDefault() ?? string.Empty;
 
         foreach (var opt in pattern.OptionList2) OptionList2.Add(opt);
         SelectedOption2 = OptionList2.FirstOrDefault() ?? string.Empty;
@@ -126,7 +126,7 @@ public partial class PatternDetailViewModel : ViewModelBase
 
     partial void OnInput1Changed(string value) => RunCurrentSimulation();
     partial void OnInput2Changed(string value) => RunCurrentSimulation();
-    partial void OnSelectedOption1Changed(string value) => RunCurrentSimulation();
+    partial void OnSelectedOption3Changed(string value) => RunCurrentSimulation();
     partial void OnSelectedOption2Changed(string value) => RunCurrentSimulation();
 
     private void RunCurrentSimulation()
@@ -144,7 +144,7 @@ public partial class PatternDetailViewModel : ViewModelBase
         {
             Input1 = Input1,
             Input2 = Input2,
-            SelectedOption1 = SelectedOption1,
+            SelectedOption3 = SelectedOption3,
             SelectedOption2 = SelectedOption2,
             ActiveToggles = activeToggles,
             ActionCommand = actionCommand

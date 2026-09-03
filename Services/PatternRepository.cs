@@ -63,7 +63,7 @@ public class PatternRepository
                 {
                     string cargo = string.IsNullOrWhiteSpace(ctx.Input1) ? "General Goods" : ctx.Input1;
                     if (!double.TryParse(ctx.Input2, out double distance) || distance <= 0) distance = 1000;
-                    string mode = ctx.SelectedOption1;
+                    string mode = ctx.SelectedOption3;
                     string rateChoice = ctx.SelectedOption2;
 
                     double customRate = rateChoice.Contains("65") ? 65.00 :
@@ -164,7 +164,7 @@ public class RoadLogistics : Logistics
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string target = ctx.SelectedOption1;
+                    string target = ctx.SelectedOption3;
                     string accent = ctx.SelectedOption2;
                     string title = string.IsNullOrWhiteSpace(ctx.Input1) ? "Application" : ctx.Input1;
                     string buttonText = string.IsNullOrWhiteSpace(ctx.Input2) ? "Execute" : ctx.Input2;
@@ -270,7 +270,7 @@ public class MacUIFactory : IUIFactory
                     string rigName = string.IsNullOrWhiteSpace(ctx.Input1) ? "Custom Rig" : ctx.Input1;
                     if (!double.TryParse(ctx.Input2, out double budget) || budget <= 0) budget = 200000;
 
-                    string cpu = ctx.SelectedOption1;
+                    string cpu = ctx.SelectedOption3;
                     string gpu = ctx.SelectedOption2;
 
                     double cpuPrice = cpu.Contains("14900K") ? 54000 : cpu.Contains("7950X") ? 56500 : cpu.Contains("14700K") ? 38000 : 19500;
@@ -385,7 +385,7 @@ public class ComputerBuilder
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string template = ctx.SelectedOption1;
+                    string template = ctx.SelectedOption3;
                     string watermark = ctx.SelectedOption2;
                     string recipient = string.IsNullOrWhiteSpace(ctx.Input1) ? "Client" : ctx.Input1;
                     string refCode = string.IsNullOrWhiteSpace(ctx.Input2) ? "REF-001" : ctx.Input2;
@@ -526,7 +526,7 @@ public class DocumentTemplate : IPrototype<DocumentTemplate>
                 {
                     string host = string.IsNullOrWhiteSpace(ctx.Input1) ? "localhost:5432" : ctx.Input1;
                     if (!int.TryParse(ctx.Input2, out int threads) || threads <= 0) threads = 64;
-                    string env = ctx.SelectedOption1;
+                    string env = ctx.SelectedOption3;
                     string cache = ctx.SelectedOption2;
 
                     bool redis = ctx.ActiveToggles.Contains("Enable Distributed Redis Cluster");
@@ -579,7 +579,7 @@ public class DocumentTemplate : IPrototype<DocumentTemplate>
                     {
                         FileName = "AppConfiguration.cs",
                         Role = "Singleton Class",
-                        Description = "Ensures only one copy exists.",
+                        Description = "Ensures only one copy exists with dynamically resolved configuration.",
                         Code = @"namespace SettingsDemo;
 
 public sealed class AppConfiguration
@@ -589,10 +589,15 @@ public sealed class AppConfiguration
 
     public static AppConfiguration Instance => _instance.Value;
 
-    public string HostUri { get; set; } = ""localhost:5432"";
-    public int MaxThreads { get; set; } = 64;
+    public string HostUri { get; set; }
+    public int MaxThreads { get; set; }
 
-    private AppConfiguration() { }
+    private AppConfiguration()
+    {
+        // Dynamically resolved from runtime environment / configuration provider
+        HostUri = Environment.GetEnvironmentVariable(""DB_HOST"") ?? $""{Environment.MachineName.ToLower()}.internal:5432"";
+        MaxThreads = Environment.ProcessorCount * 16;
+    }
 }"
                     }
                 }
@@ -645,7 +650,7 @@ public sealed class AppConfiguration
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string target = ctx.SelectedOption1;
+                    string target = ctx.SelectedOption3;
                     string currChoice = ctx.SelectedOption2;
                     string currency = currChoice.Contains("USD") ? "USD" : currChoice.Contains("EUR") ? "EUR" : currChoice.Contains("GBP") ? "GBP" : "INR";
 
@@ -685,7 +690,7 @@ public class OldBankAdapter : IPaymentProcessor
 
     public string ProcessPayment(decimal amount, string currency, string customerId)
     {
-        string xml = $""<Payment><Amount>{amount}</Amount></Payment>"";
+        string xml = $""<Payment customer='{customerId}' currency='{currency}'><Amount>{amount:F2}</Amount></Payment>"";
         return _oldBank.SendXml(xml);
     }
 }"
@@ -745,7 +750,7 @@ public class OldBankAdapter : IPaymentProcessor
                 {
                     string zone = string.IsNullOrWhiteSpace(ctx.Input1) ? "Living Room" : ctx.Input1;
                     if (!int.TryParse(ctx.Input2, out int level)) level = 50;
-                    string remoteType = ctx.SelectedOption1;
+                    string remoteType = ctx.SelectedOption3;
                     string deviceType = ctx.SelectedOption2;
                     string action = ctx.ActionCommand;
 
@@ -866,7 +871,7 @@ public class RemoteControl
                     string custName = string.IsNullOrWhiteSpace(ctx.Input1) ? "Customer" : ctx.Input1;
                     if (!int.TryParse(ctx.Input2, out int qty) || qty <= 0) qty = 1;
 
-                    string baseChoice = ctx.SelectedOption1;
+                    string baseChoice = ctx.SelectedOption3;
                     string sizeChoice = ctx.SelectedOption2;
 
                     IBeverage beverage = baseChoice.Contains("Cold Brew") ? new ColdBrew() :
@@ -883,7 +888,7 @@ public class RemoteControl
                         beverage = new SizeDecorator(beverage, "Iced Craft Cold (350ml)", 30.00m);
 
                     if (ctx.ActiveToggles.Contains("Steamed Oat Milk (+₹70.00)"))
-                        beverage = new MilkDecorator(beverage);
+                        beverage = new MilkDecorator(beverage, "Oat Milk", 70.00m);
                     if (ctx.ActiveToggles.Contains("Salted Caramel Drizzle (+₹80.00)"))
                         beverage = new CaramelDecorator(beverage);
                     if (ctx.ActiveToggles.Contains("Madagascar Vanilla Syrup (+₹60.00)"))
@@ -940,10 +945,18 @@ public interface IBeverage
 public class MilkDecorator : IBeverage
 {
     private readonly IBeverage _drink;
-    public MilkDecorator(IBeverage drink) { _drink = drink; }
+    private readonly decimal _addonCost;
+    private readonly string _milkType;
 
-    public string GetDescription() => _drink.GetDescription() + "", Milk"";
-    public decimal GetCost() => _drink.GetCost() + 70.00m;
+    public MilkDecorator(IBeverage drink, string milkType = ""Milk"", decimal addonCost = 70.00m)
+    {
+        _drink = drink;
+        _milkType = milkType;
+        _addonCost = addonCost;
+    }
+
+    public string GetDescription() => $""{_drink.GetDescription()}, {_milkType}"";
+    public decimal GetCost() => _drink.GetCost() + _addonCost;
 }"
                     }
                 }
@@ -1001,7 +1014,7 @@ public class MilkDecorator : IBeverage
                 {
                     string movie = string.IsNullOrWhiteSpace(ctx.Input1) ? "Feature Film" : ctx.Input1;
                     if (!int.TryParse(ctx.Input2, out int volume) || volume <= 0) volume = 65;
-                    string sound = ctx.SelectedOption1;
+                    string sound = ctx.SelectedOption3;
                     string lighting = ctx.SelectedOption2;
                     string action = ctx.ActionCommand;
 
@@ -1085,7 +1098,7 @@ public class HomeTheaterFacade
                 },
                 AdvancedDemoRunner = (ctx) =>
                 {
-                    string channelContext = ctx.SelectedOption1;
+                    string channelContext = ctx.SelectedOption3;
                     string priority = ctx.SelectedOption2;
                     string video = string.IsNullOrWhiteSpace(ctx.Input1) ? "New Announcement" : ctx.Input1;
                     string newSub = string.IsNullOrWhiteSpace(ctx.Input2) ? "Guest_User" : ctx.Input2;
@@ -1139,12 +1152,19 @@ public interface IObserver
 
 public class YouTubeChannel
 {
+    public string ChannelName { get; }
     private readonly List<IObserver> _subscribers = new();
+
+    public YouTubeChannel(string channelName)
+    {
+        ChannelName = channelName;
+    }
+
     public void Subscribe(IObserver sub) => _subscribers.Add(sub);
 
     public void UploadVideo(string title, string priority)
     {
-        foreach (var sub in _subscribers) sub.Notify(title, ""Tech"", priority);
+        foreach (var sub in _subscribers) sub.Notify(title, ChannelName, priority);
     }
 }"
                     }
@@ -1202,7 +1222,7 @@ public class YouTubeChannel
                 {
                     string origin = string.IsNullOrWhiteSpace(ctx.Input1) ? "Origin" : ctx.Input1;
                     string dest = string.IsNullOrWhiteSpace(ctx.Input2) ? "Destination" : ctx.Input2;
-                    string stratChoice = ctx.SelectedOption1;
+                    string stratChoice = ctx.SelectedOption3;
                     string trafficChoice = ctx.SelectedOption2;
 
                     double trafficMultiplier = trafficChoice.Contains("1.45") ? 1.45 :
@@ -1243,7 +1263,7 @@ public class Navigator
     private IRouteStrategy _strategy;
     public Navigator(IRouteStrategy strategy) { _strategy = strategy; }
     public void SetStrategy(IRouteStrategy strategy) => _strategy = strategy;
-    public RouteResult Navigate(string from, string to) => _strategy.CalculateRoute(from, to, 1.0);
+    public RouteResult Navigate(string from, string to, double trafficMultiplier = 1.0) => _strategy.CalculateRoute(from, to, trafficMultiplier);
 }"
                     }
                 }
@@ -1299,7 +1319,7 @@ public class Navigator
                 {
                     string text = string.IsNullOrWhiteSpace(ctx.Input1) ? "Clean Code" : ctx.Input1;
                     string author = string.IsNullOrWhiteSpace(ctx.Input2) ? "Author" : ctx.Input2;
-                    string actionChoice = ctx.SelectedOption1;
+                    string actionChoice = ctx.SelectedOption3;
                     string action = ctx.ActionCommand;
 
                     var editor = new TextEditor { Buffer = "Initial Document Buffer" };
@@ -1370,14 +1390,24 @@ public interface ICommand
 
 public class InsertCommand : ICommand
 {
-    private string _oldText = """";
+    private string _oldText = string.Empty;
     private readonly TextEditor _editor;
+    private readonly string _textToInsert;
     public string CommandName => ""InsertCommand"";
 
-    public InsertCommand(TextEditor ed) { _editor = ed; }
+    public InsertCommand(TextEditor ed, string textToInsert)
+    {
+        _editor = ed;
+        _textToInsert = textToInsert;
+    }
 
-    public void Execute() { _oldText = _editor.Text; _editor.Text += "" New Text""; }
-    public void Undo() { _editor.Text = _oldText; }
+    public void Execute()
+    {
+        _oldText = _editor.Text;
+        _editor.Text += _textToInsert;
+    }
+
+    public void Undo() => _editor.Text = _oldText;
 }"
                     }
                 }
@@ -1437,7 +1467,7 @@ public class InsertCommand : ICommand
                     string track = string.IsNullOrWhiteSpace(ctx.Input1) ? "Master Audio Track" : ctx.Input1;
                     if (!int.TryParse(ctx.Input2, out int bitrate) || bitrate <= 0) bitrate = 320;
 
-                    string choice = ctx.SelectedOption1;
+                    string choice = ctx.SelectedOption3;
                     string eq = ctx.SelectedOption2;
                     string action = ctx.ActionCommand;
 

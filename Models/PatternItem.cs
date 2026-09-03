@@ -56,7 +56,7 @@ public class PatternPlaygroundContext
 {
     public string Input1 { get; set; } = string.Empty;
     public string Input2 { get; set; } = string.Empty;
-    public string SelectedOption1 { get; set; } = string.Empty;
+    public string SelectedOption3 { get; set; } = string.Empty;
     public string SelectedOption2 { get; set; } = string.Empty;
     public HashSet<string> ActiveToggles { get; set; } = new();
     public string ActionCommand { get; set; } = string.Empty;
